@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 14.4.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": false
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "info@haroonadvisors.com",
+        "ascAppId": "6742163469",
+        "appleTeamId": "Q85MP6C4D8"
+      }
+    }
+  }
+}

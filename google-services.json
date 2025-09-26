@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "179231906843",
+    "project_id": "maplocation-345521",
+    "storage_bucket": "maplocation-345521.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:179231906843:android:754bdc954a23e1ce632cbe",
+        "android_client_info": {
+          "package_name": "com.haroonadvisors"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "179231906843-0dtc3761a130e8uut5td87asnaprr1jv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZzFvwBgqF5Bi97n1zcjLIPG0FKMJemQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "179231906843-0dtc3761a130e8uut5td87asnaprr1jv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "179231906843-cmvnk9iir49lto727c1o9gsbr96r7rk6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.haroonadvisors"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:179231906843:android:3c39706064726190632cbe",
+        "android_client_info": {
+          "package_name": "com.haroonadvisors"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "179231906843-0dtc3761a130e8uut5td87asnaprr1jv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0ZzFvwBgqF5Bi97n1zcjLIPG0FKMJemQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "179231906843-0dtc3761a130e8uut5td87asnaprr1jv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "179231906843-cmvnk9iir49lto727c1o9gsbr96r7rk6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.haroonadvisors"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

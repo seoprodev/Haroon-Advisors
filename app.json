@@ -1,0 +1,111 @@
+{
+  "expo": {
+    "name": "Haroon Advisors",
+    "slug": "haroon-portal-fzco",
+    "owner": "webdesignmarvel",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "**/*",
+      "app/services/locales/*"
+    ],
+    "ios": {
+      "usesAppleSignIn": true,
+      "supportsTablet": true,
+      "bundleIdentifier": "com.haroonadvisors",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to share your video for ZOOM SDK.",
+        "NSMicrophoneUsageDescription": "This app uses the microphone to share your audio for ZOOM SDK.",
+        "NSBluetoothPeripheralUsageDescription": "Required for Bluetooth audio devices for ZOOM SDK.",
+        "NSPhotoLibraryUsageDescription": "Required to use screen share feature for ZOOM SDK.",
+        "NSLocationWhenInUseUsageDescription": "Used to get your IP and network details.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.179231906843-vmc908g72eu6o1jcs2t8mc4orhhbf0kg"
+            ]
+          }
+        ]
+      },
+      "appleTeamId": "Q85MP6C4D8"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "blockedPermissions": [
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "FOREGROUND_SERVICE_MEDIA_PROJECTION",
+        "FOREGROUND_SERVICE_MICROPHONE",
+        "FOREGROUND_SERVICE_PHONE_CALL"
+      ],
+      "googleServicesFile": "./google-services.json",
+      "package": "com.haroonadvisors"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-av",
+      "expo-image-picker",
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-apple-authentication",
+      "expo-localization",
+      "expo-document-picker",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.179231906843-vmc908g72eu6o1jcs2t8mc4orhhbf0kg"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0",
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "01c91015-4e73-4375-95db-0ec9fbe9d366"
+      }
+    }
+  }
+}
