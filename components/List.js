@@ -75,7 +75,7 @@ const List = ({ image, title, ar_title, location, designation, ar_designation, p
           <View style={onlineStatusStyle} />
         </View>
 
-        <View style={{ width: '70%', justifyContent: 'center', order: i18next.language === 'ar' ? 1 : 2 }}>
+        <View style={{ width: '70%', order: i18next.language === 'ar' ? 1 : 2 }}>
           {isExpired && (
             <View style={{ ...badgeStyle, backgroundColor: packageId === 1 ? 'gold' : packageId === 2 ? 'silver' : 'transparent', }}>
               <Text style={{ color: COLORS.black, fontSize: 12 }}>
@@ -83,11 +83,11 @@ const List = ({ image, title, ar_title, location, designation, ar_designation, p
               </Text>
             </View>
           )}
-          <ThemedView style={{ gap: 0 }}>
-            <ThemedText type="title" style={{ fontSize: 18, width: '100%', textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>{i18next.language === 'ar' ? ar_title : title}</ThemedText>
-            <ThemedText type="link" style={textStyle}>{i18next.language === 'ar' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates'}</ThemedText>
-            <ThemedText type="default" style={textStyle}>{i18next.language === 'ar' ? ar_designation : designation}</ThemedText>
-          </ThemedView>
+          <ThemedText type="title" style={{ fontSize: 18, width: '100%', textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>{i18next.language === 'ar' ? ar_title : title}</ThemedText>
+          {/* <ThemedText type="link" style={textStyle}>{i18next.language === 'ar' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates'}</ThemedText> */}
+          {/* <ThemedText type="default" style={textStyle}>{i18next.language === 'ar' ? ar_designation : designation}</ThemedText> */}
+          {/* client wanted these removed Ref: Task#9 */}
+
         </View>
       </View>
 

@@ -247,7 +247,7 @@ const LawyerProfile = () => {
                 <View style={[GlobalStyleSheet.container, { backgroundColor: COLORS.primary }]}>
                     <ThemedView
                         style={{
-                            alignItems: 'center',
+                            alignItems: 'flex-start',
                             paddingTop: 30,
                             paddingBottom: 20,
                             flexDirection: i18next.language === 'ar' ? 'row-reverse' : 'row', // Ensure RTL behavior
@@ -277,21 +277,22 @@ const LawyerProfile = () => {
                         <ThemedView
                             style={{
                                 width: '70%',
-                                alignItems: i18next.language === 'ar' ? 'flex-end' : 'flex-start' // Adjust alignment dynamically 
+                                alignItems: i18next.language === 'ar' ? 'flex-end' : 'flex-start', // Adjust alignment dynamically 
                             }}
                             backgroundColor='transparent'
                         >
-                            <ThemedText type="title">
+                            <ThemedText type="title" >
                                 {i18next.language === 'ar' ? lawyerData.ar_name : lawyerData.name}
                             </ThemedText>
-                            <Text
+                            {/* client wanted these removed Ref: Task#9 */}
+                            {/* <Text
                                 style={{
                                     color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg,
                                     textAlign: i18next.language === 'ar' ? 'right' : 'left'
                                 }}
                             >
                                 {i18next.language === 'ar' ? lawyerData.ar_designations : lawyerData.designations}
-                            </Text>
+                            </Text> */}
                         </ThemedView>
                     </ThemedView>
 
