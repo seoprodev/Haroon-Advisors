@@ -780,21 +780,20 @@ const styles = StyleSheet.create({
   },
   dropdownButtonTxtStyle: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500',
     color: '#151E26',
   },
   dropdownMenuStyle: {
     backgroundColor: '#E9ECEF',
-    borderRadius: SIZES.radius
+    borderRadius: SIZES.radius,
   },
   dropdownItemStyle: {
     width: '100%',
     flexDirection: 'row',
     paddingHorizontal: 12,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8
+    paddingVertical: "4.5%",
   },
   appleButton: {
     width: '100%',

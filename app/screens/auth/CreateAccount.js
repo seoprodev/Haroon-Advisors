@@ -10,6 +10,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ThemedButton } from "@/components/ThemedButton";
 import * as ImagePicker from 'expo-image-picker';
 import i18next, { t } from 'i18next';
+import { Ionicons } from '@expo/vector-icons';
+
 
 const CreateAccount = () => {
     const { colors } = useTheme();
@@ -28,6 +30,9 @@ const CreateAccount = () => {
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [selectedLocation, setSelectedLocation] = useState('');
     const [license, setImage] = useState(null);
+    const [avatar, setAvatar] = useState(null);
+
+
     useEffect(() => {
         const fetchData = async () => {
             await fetchDepartments();
@@ -144,6 +149,25 @@ const CreateAccount = () => {
             setButtonDisabled(false);
         }
     };
+    const pickAvatar = async () => {
+        // Ask permission first
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            alert('Sorry, we need camera roll permissions to make this work!');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1], // square crop for avatar
+            quality: 0.7,
+        });
+
+        if (!result.canceled) {
+            setAvatar(result.assets[0].uri);
+        }
+    };
     const handleLawyerRegister = async () => {
         if (!name || !email || !phone || !password) {
             Alert.alert('Missing Information', 'Please ensure all fields are filled out.');
@@ -237,6 +261,23 @@ const CreateAccount = () => {
     const renderTab2 = () => (
         <View style={styles.tab2}>
             <View style={{ gap: 15, marginBottom: 20 }}>
+                {/* Avatar Upload */}
+                <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                    <TouchableOpacity onPress={pickAvatar}>
+                        {avatar ? (
+                            <Image
+                                source={{ uri: avatar }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+
+                                <Ionicons name="camera" size={36} color="#999" />
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
                 <View>
                     <TextInput textAlign={i18next.language === 'ar' ? 'right' : 'left'} style={[styles.inputStyle, { borderColor: colorScheme === 'dark' ? COLORS.white : COLORS.title, color: colorScheme === 'dark' ? COLORS.white : COLORS.black }]} placeholder={t('EnterYourName')} placeholderTextColor={colorScheme === 'dark' ? COLORS.white : colors.text} value={name} onChangeText={text => setName(text)} />
                 </View>
@@ -297,7 +338,10 @@ const CreateAccount = () => {
                     data={locations?.map(location => location.location) || []}
                     defaultButtonText={t('SelectLocation')}
                     defaultValue={null}
-                    dropdownStyle={styles.dropdownMenuStyle}
+                    dropdownStyle={{
+                        backgroundColor: '#E9ECEF',
+                        borderRadius: SIZES.radius,
+                    }}
                     onSelect={(selectedItem, index) => setSelectedLocation(selectedItem)}
                     showsVerticalScrollIndicator={false}
                     renderButton={(selectedItem) => (
@@ -358,6 +402,18 @@ const CreateAccount = () => {
 export default CreateAccount;
 
 const styles = StyleSheet.create({
+    avatar: {
+        width: "40%",
+        aspectRatio: 1,
+        borderRadius: 200,
+        borderWidth: 2,
+        borderColor: COLORS.primary,
+    },
+    avatarPlaceholder: {
+        backgroundColor: COLORS.primayLight2,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     inputStyle: {
         ...FONTS.fontLg,
         height: 50,
@@ -387,13 +443,15 @@ const styles = StyleSheet.create({
     },
     dropdownButtonTxtStyle: {
         flex: 1,
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '500',
         color: '#151E26'
     },
     dropdownMenuStyle: {
         backgroundColor: '#E9ECEF',
         borderRadius: SIZES.radius,
+        height: "22%",
+        marginTop: -40
     },
     dropdownItemStyle: {
         width: '100%',

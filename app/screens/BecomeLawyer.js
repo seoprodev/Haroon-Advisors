@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     dropdownMenuStyle: {
         backgroundColor: '#E9ECEF',
         borderRadius: SIZES.radius,
-        height: "25%"
+        height: "22%"
     },
     dropdownItemStyle: {
         width: '100%',
