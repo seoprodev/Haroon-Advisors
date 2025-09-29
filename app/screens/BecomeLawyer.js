@@ -22,6 +22,7 @@ import { api_url, COLORS, prefix, SIZES } from '../../constants/theme';
 import { ThemedButton } from "@/components/ThemedButton";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18next, { t } from 'i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 const BecomeLawyer = () => {
     const { userData } = useLocalSearchParams();
@@ -38,6 +39,7 @@ const BecomeLawyer = () => {
     const [lname, setLname] = useState(parsedUserData?.lname || '');
     const [email, setEmail] = useState(parsedUserData?.email || '');
     const [phone, setPhone] = useState(parsedUserData?.phone || '');
+    const [avatar, setAvatar] = useState(null);
 
     useEffect(() => {
         fetchDepartments();
@@ -77,6 +79,28 @@ const BecomeLawyer = () => {
             setLicense(uri);
         }
     };
+
+    const pickAvatar = async () => {
+        // Ask permission first
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            alert('Sorry, we need camera roll permissions to make this work!');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1], // square crop for avatar
+            quality: 0.7,
+        });
+
+        if (!result.canceled) {
+            setAvatar(result.assets[0].uri);
+        }
+    };
+
+
 
     const getMimeType = (uri) => {
         const ext = uri.split('.').pop().toLowerCase();
@@ -152,6 +176,24 @@ const BecomeLawyer = () => {
             >
                 <SafeAreaView>
                     <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50, backgroundColor: COLORS.white }}>
+
+                        {/* Avatar Upload */}
+                        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                            <TouchableOpacity onPress={pickAvatar}>
+                                {avatar ? (
+                                    <Image
+                                        source={{ uri: avatar }}
+                                        style={styles.avatar}
+                                    />
+                                ) : (
+                                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
+
+                                        <Ionicons name="camera" size={36} color="#999" />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+
                         {/* First Name */}
                         <Text style={{ fontWeight: 'bold', marginBottom: 4, textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>
                             {t('Name')}
@@ -247,7 +289,7 @@ const BecomeLawyer = () => {
                         />
 
                         {/* Department Dropdown */}
-                        <Text style={{ fontWeight: 'bold', marginBottom: 4, textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>{t('SelectPreferredDepartment')}</Text>
+                        <Text style={{ fontWeight: 'bold', marginBottom: 4, textAlign: i18next.language === 'ar' ? 'right' : 'left', }}>{t('SelectPreferredDepartment')}</Text>
                         <SelectDropdown
                             data={departments.map(department => department.name)}
                             defaultButtonText={t('SelectPreferredDepartment')}
@@ -267,6 +309,7 @@ const BecomeLawyer = () => {
                                     <Text>{item}</Text>
                                 </View>
                             )}
+
                         />
 
                         {/* Location Dropdown */}
@@ -275,7 +318,7 @@ const BecomeLawyer = () => {
                             data={locations.map(location => location.location)}
                             defaultButtonText={t('SelectLocation')}
                             defaultValue={null}
-                            dropdownStyle={styles.dropdownMenuStyle}
+                            dropdownStyle={[styles.dropdownMenuStyle, { maxHeight: "25%" }]}
                             onSelect={(selectedItem, index) => setSelectedLocation(selectedItem)}
                             showsVerticalScrollIndicator={false}
                             renderButton={(selectedItem) => (
@@ -299,6 +342,7 @@ const BecomeLawyer = () => {
                             onPress={pickLicenseImage}
                             backgroundColor={COLORS.primary}
                             style={{ marginBottom: 10 }}
+
                         />
                         {license && (
                             <Image
@@ -411,7 +455,7 @@ const styles = StyleSheet.create({
     },
     dropdownButtonTxtStyle: {
         flex: 1,
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '500',
         color: '#151E26',
         textAlign: 'center'
@@ -419,6 +463,7 @@ const styles = StyleSheet.create({
     dropdownMenuStyle: {
         backgroundColor: '#E9ECEF',
         borderRadius: SIZES.radius,
+        height: "25%"
     },
     dropdownItemStyle: {
         width: '100%',
@@ -428,5 +473,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 15,
         borderBottomWidth: 1,
+    },
+    avatar: {
+        width: "40%",
+        aspectRatio: 1,
+        borderRadius: 200,
+        borderWidth: 2,
+        borderColor: COLORS.primary,
+    },
+    avatarPlaceholder: {
+        backgroundColor: COLORS.primayLight2,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
