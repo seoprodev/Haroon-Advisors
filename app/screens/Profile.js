@@ -132,7 +132,8 @@ const Profile = () => {
             if (userData.name?.trim()) formData.append('name', userData.name.trim());
             if (userData.lname?.trim()) formData.append('lname', userData.lname.trim());
             if (userData.email?.trim()) formData.append('email', userData.email.trim());
-            if (userData.phone?.trim() && userData.phone !== '+971') formData.append('phone', userData.phone.trim());
+            // if (userData.phone?.trim() && userData.phone !== '+971') formData.append('phone', userData.phone.trim());
+            if (userData.phone?.trim()) formData.append('phone', userData.phone.trim());
 
             if (selectedImage) {
                 formData.append('image', {
@@ -173,7 +174,8 @@ const Profile = () => {
                     {
                         text: 'OK',
                         onPress: () => {
-                            DevSettings.reload();
+                            navigation.goBack();
+
                         },
                     },
                 ]);
