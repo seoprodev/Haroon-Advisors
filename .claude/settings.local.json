@@ -4,7 +4,9 @@
       "Bash(./gradlew:*)",
       "Bash(rm:*)",
       "Bash(npm install)",
-      "Bash(npx expo prebuild:*)"
+      "Bash(npx expo prebuild:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

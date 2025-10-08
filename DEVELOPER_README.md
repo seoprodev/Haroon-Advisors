@@ -38,26 +38,145 @@
 
 ---
 
+## Application Entry Points & Flow
+
+### Entry Point
+- **Main Entry**: `package.json` → `"main": "expo-router/entry"`
+- **Root Layout**: `app/_layout.tsx` (bootstraps fonts, i18n, Zoom SDK)
+- **Landing Screen**: `app/index.tsx` (checks auth, routes to role-specific screens)
+
+### App Initialization Sequence
+1. **`app/_layout.tsx`** loads fonts (ElMessiri, Nunito) and initializes i18next
+2. **Network monitoring** starts (polls every 1s via `expo-network`)
+3. **`app/index.tsx`** checks AsyncStorage for saved user session
+4. **Push notifications** initialized via `usePushNotifications.ts`
+5. **AppState listener** tracks online/offline status, sends to backend
+6. **Auto-navigation** based on `userType`:
+   - `lawyer` → `/(drawer)/lawyerele/LawyerHome`
+   - `client` → `/(drawer)/clientele/Home`
+
+### Navigation Architecture
+
+**File-based Routing (Expo Router):**
+```
+app/
+├── _layout.tsx                      # Root stack navigator + Zoom SDK provider
+├── index.tsx                        # Entry point (auth check, splash screen)
+├── (drawer)/                        # Drawer navigation (role-based)
+│   ├── _layout.tsx                  # Drawer config (shows/hides based on userType)
+│   ├── clientele/                   # Client role screens
+│   │   ├── _layout.tsx
+│   │   ├── Home.js                  # Client home dashboard
+│   │   ├── Chat.js                  # Client chat list
+│   │   ├── Appointments.js          # Client appointments
+│   │   └── About.js                 # About/info screen
+│   └── lawyerele/                   # Lawyer role screens
+│       ├── _layout.tsx
+│       ├── LawyerHome.js            # Lawyer dashboard
+│       ├── Chat.js                  # Lawyer chat list
+│       ├── Schedules.js             # Lawyer schedules
+│       └── About.js                 # About/info screen
+└── screens/                         # Shared screens (stack navigation)
+    ├── auth/
+    │   ├── SignIn.js                # Sign in (Google, Apple, Email/Password)
+    │   └── CreateAccount.js         # Registration
+    ├── chat/
+    │   ├── ChatScreen.js            # 1-on-1 chat (Pusher WebSocket)
+    │   ├── CallScreen.tsx           # Zoom video calls
+    │   └── WebViewScreen.js         # Web-based video fallback
+    ├── Profile.tsx                  # User profile management
+    ├── BecomeLawyer.tsx             # Lawyer registration/upgrade
+    ├── SearchLawyers.tsx            # Search/filter lawyers
+    ├── OnlineLawyers.tsx            # Online lawyers list
+    ├── LawyerProfile.tsx            # View lawyer profile
+    ├── AllNotifications.tsx         # Notifications center
+    ├── DeleteAccount.tsx            # Account deletion
+    ├── PrivacyPolicy.tsx            # Privacy policy
+    └── Terms&Use.tsx                # Terms of use
+```
+
+### User Type System
+- **Storage**: AsyncStorage with key `userData`
+  ```json
+  {
+    "userType": "client" | "lawyer",
+    "userData": {
+      "user": {
+        "id": "...",
+        "name": "...",
+        "email": "...",
+        "phone": "...",
+        ...
+      }
+    }
+  }
+  ```
+- **Drawer Navigation**: Conditionally renders screens based on `userType`
+  - Clients see only `clientele` screens
+  - Lawyers see only `lawyerele` screens
+- **Auto-routing**: On app launch, reads `userType` and navigates accordingly
+
+### Real-time Features Implementation
+- **Chat Messaging**: Pusher WebSocket (`@pusher/pusher-websocket-react-native`)
+- **Video Calls**: Zoom Video SDK (`@zoom/react-native-videosdk`)
+- **Push Notifications**: Expo Notifications with device token registration
+- **Online Status**: AppState listener sends `is_online` status to backend API
+
+---
+
 ## Project Structure
 
 ```
 Haroon-Advisors/
 ├── app/                          # Main application code (Expo Router)
 │   ├── (drawer)/                 # Drawer navigation layouts
+│   │   ├── _layout.tsx           # Drawer config (role-based)
 │   │   ├── clientele/            # Client-specific screens
+│   │   │   ├── _layout.tsx
+│   │   │   ├── Home.js
+│   │   │   ├── Chat.js
+│   │   │   ├── Appointments.js
+│   │   │   └── About.js
 │   │   └── lawyerele/            # Lawyer-specific screens
-│   ├── screens/                  # Individual screens
+│   │       ├── _layout.tsx
+│   │       ├── LawyerHome.js
+│   │       ├── Chat.js
+│   │       ├── Schedules.js
+│   │       └── About.js
+│   ├── screens/                  # Shared screens (stack navigation)
+│   │   ├── auth/                 # Authentication screens
+│   │   │   ├── SignIn.js
+│   │   │   └── CreateAccount.js
 │   │   ├── chat/                 # Chat and video call screens
-│   │   ├── AllNotifications.tsx
+│   │   │   ├── ChatScreen.js     # Pusher WebSocket chat
+│   │   │   ├── CallScreen.tsx    # Zoom video calls
+│   │   │   └── WebViewScreen.js
+│   │   ├── Profile.tsx
+│   │   ├── BecomeLawyer.tsx
 │   │   ├── SearchLawyers.tsx
+│   │   ├── AllNotifications.tsx
 │   │   └── ...
-│   ├── _layout.tsx               # Root layout
-│   └── index.tsx                 # Entry screen
+│   ├── services/                 # Business logic services
+│   │   └── i18next.js            # Internationalization config
+│   ├── _layout.tsx               # Root layout (fonts, i18n, Zoom SDK)
+│   └── index.tsx                 # Entry screen (auth check, routing)
 ├── components/                   # Reusable UI components
-├── src/                          # Services, utilities, and business logic
-├── assets/                       # Images, fonts, and static resources
+│   ├── ThemedView.tsx
+│   ├── ThemedButton.tsx
+│   ├── CustomDrawerContent.tsx
+│   └── ...
 ├── constants/                    # App-wide constants
+│   ├── theme.js                  # API URLs, colors, fonts, icons
+│   └── ...
+├── assets/                       # Images, fonts, and static resources
+│   ├── fonts/
+│   │   ├── ElMessiri-Regular.ttf
+│   │   └── Nunito-Regular.ttf
+│   └── locales/
+│       ├── en.json               # English translations
+│       └── ar.json               # Arabic translations
 ├── hooks/                        # Custom React hooks
+├── usePushNotifications.ts       # Push notification hook
 ├── android/                      # Android native project
 ├── ios/                          # iOS native project
 ├── app.json                      # Expo configuration
@@ -194,6 +313,31 @@ If you're coming from React Native CLI, here are the key differences:
 
 ---
 
+## API Configuration
+
+The app uses a centralized API configuration in `constants/theme.js`:
+
+```javascript
+// API Endpoints
+export const base_url = "https://app.haroonadvisors.com/";
+export const api_url = "https://app.haroonadvisors.com/api/";
+export const prefix = "client/";          // Client API prefix
+export const lawyerprefix = "lawyer/";     // Lawyer API prefix
+```
+
+### Common API Patterns
+- **Authentication**: `${api_url}login`, `${api_url}register`
+- **User Status**: `${api_url}toggle-status` (online/offline tracking)
+- **Profile**: `${api_url}${prefix}profile` or `${api_url}${lawyerprefix}profile`
+- **Chat**: Uses Pusher WebSocket for real-time messaging
+- **Video**: Zoom SDK with session tokens from backend
+
+### AsyncStorage Keys
+- `userData` - Stores user session and type
+- `language` - Current language preference (en/ar)
+
+---
+
 ## Key Dependencies
 
 ### Navigation
@@ -285,6 +429,46 @@ npx expo start
 ```
 
 Once the app is installed on your phone, it will automatically connect to the Metro bundler and hot reload your code changes. No rebuild needed!
+
+### Testing User Flows
+
+**To test as a Client:**
+1. Clear AsyncStorage or sign out
+2. Sign in/register as a client
+3. You'll be routed to `/(drawer)/clientele/Home`
+4. Drawer shows: Home, Chat, Appointments, About
+
+**To test as a Lawyer:**
+1. Clear AsyncStorage or sign out
+2. Sign in/register as a lawyer (or use "Become a Lawyer" feature)
+3. You'll be routed to `/(drawer)/lawyerele/LawyerHome`
+4. Drawer shows: Home, Chat, Schedules, About
+
+**Clear AsyncStorage:**
+- Use the "Clear AsyncStorage" button on the splash screen (when network fails)
+- Or manually: `await AsyncStorage.clear()`
+
+### Debugging Tips
+
+**Network Requests:**
+- All API calls use `axios` with base URL from `constants/theme.js`
+- Check Network tab in React Native Debugger
+- Backend API: `https://app.haroonadvisors.com/api/`
+
+**Navigation Debugging:**
+- Use `console.log(router)` to inspect current route
+- Check `AsyncStorage` for `userData` to see current user type
+- Drawer visibility is controlled by `userType` in `app/(drawer)/_layout.tsx`
+
+**Push Notifications:**
+- Only work on physical devices
+- Check Expo dashboard for push token registration
+- Notifications configured in `usePushNotifications.ts`
+
+**Video Calls:**
+- Zoom SDK requires real device testing
+- Configured with `appGroupId: 'group.us.zoom.HaroonZoomVideoSDK'`
+- See `app/_layout.tsx` for ZoomVideoSdkProvider setup
 
 ---
 
