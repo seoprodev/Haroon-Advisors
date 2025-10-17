@@ -37,11 +37,13 @@ const LawyerHome = () => {
                 setRefreshing(false);
             }
             const apiUrl = `${api_url}lawyer/${userId}/new-appointment`;
+            console.log('Fetching appointments from:', apiUrl); // Debug log
             const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`Error fetching appointments: ${response.statusText}`);
             }
             const data = await response.json();
+            console.log('Fetched Appointments:', data); // Debug log
             setAppointmentData(data.appointments);
             await AsyncStorage.setItem('appointments', JSON.stringify(data.appointments));
         } catch (error) {
@@ -89,7 +91,7 @@ const LawyerHome = () => {
                             <Text style={{ ...FONTS.font, color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg, textAlign: 'center' }}>{t('NoClientsConnected')}</Text>
                         </View>
                     ) : (
-                        <UserAppointments title={t('AllAppointments')} appointmentData={appointmentData} userData={userData} userType={userType} />
+                        <UserAppointments title={t('AllAppointments')} appointmentData={appointmentData} userData={userData} userType={userType} onRefresh={fetchAppointments} />
                     )
                 )}
             </ScrollView>

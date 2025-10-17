@@ -196,7 +196,7 @@ const Profile = () => {
             <View style={{ minHeight: 250, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary }}>
                 <View style={styles.profilePictureContainer}>
                     <TouchableOpacity onPress={pickImage}>
-                        <Image source={userData.image ? { uri: userData.image } : IMAGES.user} style={styles.profileImage} />
+                        <Image source={selectedImage ? { uri: selectedImage } : (userData.image ? { uri: userData.image } : IMAGES.user)} style={styles.profileImage} />
                         <TouchableOpacity
                             style={{
                                 height: 40,

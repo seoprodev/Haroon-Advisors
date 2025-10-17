@@ -79,7 +79,7 @@ const Appointments = () => {
                             </View>
                         </View>
                     ) : (
-                        <UserAppointments title={t('NewAppointments')} appointmentData={appointmentData} userData={userData} userType={userType} />
+                        <UserAppointments title={t('NewAppointments')} appointmentData={appointmentData} userData={userData} userType={userType} onRefresh={fetchAppointments} />
                     )
                 )}
             </ScrollView>

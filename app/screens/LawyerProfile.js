@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import Toast from 'react-native-simple-toast';
 import SelectDropdown from 'react-native-select-dropdown';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Chip from '../../components/Chip';
 import { Calendar } from 'react-native-calendars';
@@ -36,10 +35,9 @@ const LawyerProfile = () => {
     const [userType, setUserType] = useState();
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [dayName, setDayName] = useState(null);
-    const [showTimePicker, setShowTimePicker] = useState(false);
-    const [selectedTime, setSelectedTime] = useState(new Date());
     const durationOptions = ["15 minutes", "30 minutes", "1 hour"];
-    const [selectedDuration, setSelectedDuration] = useState(null);
+    const [selectedDuration, setSelectedDuration] = useState("1 hour");
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const enabledDays = schedules.map(schedule => schedule.Day);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -112,6 +110,9 @@ const LawyerProfile = () => {
         try {
             const response = await fetch(`${api_url}lawyer/${lawyerData.id}/schedules`);
             const { schedules } = await response.json();
+
+
+            console.log('Fetched schedules:', schedules); // Debug log
             if (response.ok) {
                 setSchedules(schedules);
             } else {
@@ -126,6 +127,9 @@ const LawyerProfile = () => {
 
     const onModalOpen = () => {
         fetchSchedules();
+        // Set current date as default selected date
+        const today = new Date().toISOString().split('T')[0];
+        setSelectedDate(today);
     };
 
     const getAvailableTimeSlots = () => {
@@ -137,14 +141,66 @@ const LawyerProfile = () => {
         }
         const selectedDaySchedules = schedules.filter(schedule => schedule.Day.toLowerCase() === dayName.toLowerCase());
         if (selectedDaySchedules.length === 0) {
-            return [{ message: "No schedules found" }];
+            return [];
         }
-        const availableTimeSlots = selectedDaySchedules.map(schedule => ({
-            scheduleID: schedule["ID"],
-            startTime: schedule["Start Time"],
-            endTime: schedule["End Time"]
-        }));
-        return availableTimeSlots;
+
+        // Generate time slots based on selected duration
+        const timeSlots = [];
+
+        selectedDaySchedules.forEach(schedule => {
+            const startTime = schedule["Start Time"];
+            const endTime = schedule["End Time"];
+
+            // Parse time (format: "HH:MM AM/PM")
+            const parseTime = (timeStr) => {
+                const [time, period] = timeStr.split(' ');
+                let [hours, minutes] = time.split(':').map(Number);
+
+                if (period === 'PM' && hours !== 12) hours += 12;
+                if (period === 'AM' && hours === 12) hours = 0;
+
+                return { hours, minutes };
+            };
+
+            const formatTime = (hours, minutes) => {
+                const period = hours >= 12 ? 'PM' : 'AM';
+                const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00 ${period}`;
+            };
+
+            const start = parseTime(startTime);
+            const end = parseTime(endTime);
+
+            // Convert to minutes for easier calculation
+            const startMinutes = start.hours * 60 + start.minutes;
+            const endMinutes = end.hours * 60 + end.minutes;
+
+            // Determine slot duration based on selected duration
+            let slotDuration = 60; // default
+            if (selectedDuration === "15 minutes") {
+                slotDuration = 15;
+            } else if (selectedDuration === "30 minutes") {
+                slotDuration = 30;
+            }
+
+            // Generate slots
+            for (let time = startMinutes; time < endMinutes; time += slotDuration) {
+                const slotHours = Math.floor(time / 60);
+                const slotMinutes = time % 60;
+                const slotEndTime = time + slotDuration;
+                const slotEndHours = Math.floor(slotEndTime / 60);
+                const slotEndMinutes = slotEndTime % 60;
+
+                timeSlots.push({
+                    scheduleID: schedule["ID"],
+                    startTime: formatTime(slotHours, slotMinutes),
+                    endTime: formatTime(slotEndHours, slotEndMinutes),
+                    displayText: `${formatTime(slotHours, slotMinutes)} - ${formatTime(slotEndHours, slotEndMinutes)}`
+                });
+            }
+        });
+
+        return timeSlots;
     };
 
     const scheduleNotifications = async (appointmentDetails) => {
@@ -171,7 +227,12 @@ const LawyerProfile = () => {
         });
     };
 
-    const createAppointment = async (data) => {
+    const createAppointment = async () => {
+        if (!selectedTimeSlot) {
+            Toast.show('Please select a time slot', Toast.LONG);
+            return;
+        }
+
         try {
             let amount = 0;
             let duration = 0;
@@ -185,27 +246,25 @@ const LawyerProfile = () => {
                 amount = lawyerData.fee_hour;
                 duration = 60;
             }
-            const appointmentStartTime = new Date(selectedTime).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true,
-            });
+
             const appointmentRequestBody = {
-                user_id: data.userInfo.id,
-                lawyer_id: data.lawyerInfo.id,
-                lawyer_name: data.lawyerInfo.name,
-                department_id: data.departmentId,
+                user_id: userData.user.id,
+                lawyer_id: lawyerData.id,
+                lawyer_name: lawyerData.name,
+                // department_id: lawyerData.department_id,
                 date: selectedDate,
-                appointment_start_time: appointmentStartTime,
+                appointment_start_time: selectedTimeSlot.startTime,
                 fee: amount,
                 duration: duration,
-                schedule_id: data.scheduleId,
-                fname: data.userInfo.name,
-                lname: data.userInfo.lname,
-                email: data.userInfo.email,
-                phone: data.userInfo.phone,
+                schedule_id: selectedTimeSlot.scheduleID,
+                fname: userData.user.name,
+                lname: userData.user.lname,
+                email: userData.user.email,
+                phone: userData.user.phone,
             };
+
+            console.log('Appointment Request Body:', appointmentRequestBody); // Debug log
+
             const token = await AsyncStorage.getItem('jwtToken');
             const response = await axios.post(`${api_url}telr-payment-form`, appointmentRequestBody, {
                 headers: {
@@ -219,24 +278,14 @@ const LawyerProfile = () => {
             setModalVisible(false);
         } catch (error) {
             console.log('Error creating appointment:', error);
+            console.log('Error creating appointment:', error.message);
+            console.log('Error creating appointment response:', error.response);
             if (error.response) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Failed to create appointment',
-                    text2: error.response.data.error || 'Server error occurred.',
-                });
+                Toast.show('Failed to create appointment: ' + (error.response.data.error || 'Server error occurred.'), Toast.LONG);
             } else if (error.request) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Failed to create appointment',
-                    text2: 'No response received from the server.',
-                });
+                Toast.show('Failed to create appointment: No response received from the server.', Toast.LONG);
             } else {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Failed to create appointment',
-                    text2: error.message,
-                });
+                Toast.show('Failed to create appointment: ' + error.message, Toast.LONG);
             }
         }
     };
@@ -366,7 +415,16 @@ const LawyerProfile = () => {
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
                         <View style={{ backgroundColor: colorScheme === 'light' ? COLORS.white : COLORS.betabg, padding: 20, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderTopWidth: 3, borderColor: COLORS.primary }}>
                             <View style={{ marginBottom: 15, gap: 10 }}>
-                                <ThemedButton title={t('Close')} type='primary' onPress={() => setModalVisible(false)} />
+                                <ThemedButton
+                                    title={t('Close')}
+                                    type='primary'
+                                    onPress={() => {
+                                        setModalVisible(false);
+                                        setSelectedDate(null);
+                                        setSelectedTimeSlot(null);
+                                        setSelectedDuration("1 hour");
+                                    }}
+                                />
                                 <Text style={[FONTS.h3, { color: colorScheme === 'dark' ? COLORS.white : colors.title, textAlign: 'center', marginBottom: 10 }]}>{t('SelectAppointmentDate')}</Text>
                                 <View>
                                     {loading ? (
@@ -400,6 +458,7 @@ const LawyerProfile = () => {
                                         data={durationOptions}
                                         onSelect={(selectedItem, index) => {
                                             setSelectedDuration(selectedItem);
+                                            setSelectedTimeSlot(null); // Reset selected time slot when duration changes
                                         }}
                                         buttonTextAfterSelection={(selectedItem, index) => {
                                             return selectedItem;
@@ -407,18 +466,15 @@ const LawyerProfile = () => {
                                         rowTextForSelection={(item, index) => {
                                             return item;
                                         }}
-                                        defaultButtonText={t('SelectDuration')}
-                                        defaultValue={null}
+                                        defaultButtonText={selectedDuration}
+                                        defaultValue={selectedDuration}
                                         dropdownStyle={styles.dropdownMenuStyle}
                                         showsVerticalScrollIndicator={false}
                                         renderButton={(selectedItem) => {
                                             return (
                                                 <View style={styles.dropdownButtonStyle}>
-                                                    {selectedItem ? (
-                                                        <Text>{selectedItem}</Text>
-                                                    ) : null}
                                                     <Text style={styles.dropdownButtonTxtStyle}>
-                                                        {selectedItem ? selectedItem.title : t('DurationForAppointment')}
+                                                        {selectedDuration || t('DurationForAppointment')}
                                                     </Text>
                                                 </View>
                                             );
@@ -426,68 +482,56 @@ const LawyerProfile = () => {
                                         renderItem={(item, isSelected) => {
                                             return (
                                                 <View style={{ flexDirection: "row", ...styles.dropdownItemStyle }}>
-                                                    <View>
-                                                        <Text>{item}</Text>
-                                                    </View>
+                                                    <Text>{item}</Text>
                                                 </View>
                                             );
                                         }}
                                     />
 
-                                    {/* Time Picker should appear immediately after duration selection */}
+                                    {/* Time Slot Chips */}
                                     {selectedDuration && (
                                         <>
-                                            <Text style={[FONTS.h5, { color: colorScheme === 'dark' ? COLORS.white : colors.title, marginVertical: 10, textAlign: i18next.language === 'ar' ? 'right' : 'left' }]}>{t('SelectTime')}</Text>
+                                            <Text style={[FONTS.h5, { color: colorScheme === 'dark' ? COLORS.white : colors.title, marginTop: 15, marginBottom: 10, textAlign: i18next.language === 'ar' ? 'right' : 'left' }]}>
+                                                {t('SelectTimeSlot')}
+                                            </Text>
 
-                                            {/* Custom-styled button for time picker */}
-                                            <TouchableOpacity style={styles.dropdownButtonStyle} onPress={() => setShowTimePicker(true)}>
-                                                <Text style={styles.dropdownButtonTxtStyle}>
-                                                    {selectedTime ? selectedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : t('SelectTime')}
+                                            {getAvailableTimeSlots() && getAvailableTimeSlots().length > 0 ? (
+                                                <View style={styles.timeSlotsContainer}>
+                                                    {getAvailableTimeSlots().map((slot, index) => (
+                                                        <TouchableOpacity
+                                                            key={index}
+                                                            style={[
+                                                                styles.timeSlotChip,
+                                                                selectedTimeSlot?.displayText === slot.displayText && styles.timeSlotChipSelected
+                                                            ]}
+                                                            onPress={() => setSelectedTimeSlot(slot)}
+                                                        >
+                                                            <Text style={[
+                                                                styles.timeSlotChipText,
+                                                                selectedTimeSlot?.displayText === slot.displayText && styles.timeSlotChipTextSelected
+                                                            ]}>
+                                                                {slot.displayText}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            ) : (
+                                                <Text style={[FONTS.font, { color: colorScheme === 'dark' ? COLORS.white : colors.title, textAlign: 'center', marginVertical: 15 }]}>
+                                                    {t('NoSchedulesAvailable')}
                                                 </Text>
-                                            </TouchableOpacity>
-
-                                            {/* Native Time Picker (hidden until button is pressed) */}
-                                            {showTimePicker && (
-                                                <DateTimePicker
-                                                    testID="dateTimePicker"
-                                                    value={selectedTime}
-                                                    mode="time"
-                                                    is24Hour={false}
-                                                    display="spinner"
-                                                    onChange={(event, time) => {
-                                                        setShowTimePicker(false); // Hide picker after selection
-                                                        if (time) setSelectedTime(time);
-                                                    }}
-                                                />
                                             )}
+
+                                            {/* Make Appointment Button - Always visible */}
+                                            <View style={{ marginTop: 20, opacity: (!selectedDate || !selectedDuration || !selectedTimeSlot) ? 0.5 : 1 }}>
+                                                <ThemedButton
+                                                    title={t('MakeAnAppointment')}
+                                                    type='primary'
+                                                    onPress={createAppointment}
+                                                    disabled={!selectedDate || !selectedDuration || !selectedTimeSlot}
+                                                />
+                                            </View>
                                         </>
                                     )}
-
-                                    <View style={GlobalStyleSheet.row}>
-                                        {getAvailableTimeSlots() ? (
-                                            getAvailableTimeSlots().map((slot, index) => (
-                                                <View key={index} style={{ width: "100%", marginTop: 10 }}>
-                                                    {slot.startTime ? (
-                                                        <View>
-                                                            <ThemedButton title={t('MakeAnAppointment')} type='primary' onPress={() => createAppointment({
-                                                                userInfo: userData.user,
-                                                                lawyerInfo: lawyerData,
-                                                                departmentId: lawyerData.department_id,
-                                                                date: selectedDate,
-                                                                duration: selectedDuration,
-                                                                scheduleId: slot.scheduleID,
-                                                                currentTime: selectedTime
-                                                            })} />
-                                                        </View>
-                                                    ) : (
-                                                        <Text style={{ color: COLORS.white }}>{slot.message}</Text>
-                                                    )}
-                                                </View>
-                                            ))
-                                        ) : (
-                                            <Text style={{ color: COLORS.white }}>{t('SelectDate')}</Text>
-                                        )}
-                                    </View>
                                 </>
                             )}
                         </View>
@@ -506,16 +550,13 @@ const LawyerProfile = () => {
                                 title={t('Close')}
                                 type='primary'
                                 onPress={async () => {
-                                    await scheduleNotifications({
-                                        lawyer_name: i18next.language === 'ar' ? lawyerData.ar_name : lawyerData.name,
-                                        date: selectedDate,
-                                        appointment_start_time: new Date(selectedTime).toLocaleTimeString('en-US', {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            second: '2-digit',
-                                            hour12: true,
-                                        }),
-                                    });
+                                    if (selectedTimeSlot) {
+                                        await scheduleNotifications({
+                                            lawyer_name: i18next.language === 'ar' ? lawyerData.ar_name : lawyerData.name,
+                                            date: selectedDate,
+                                            appointment_start_time: selectedTimeSlot.startTime,
+                                        });
+                                    }
 
                                     setShowSuccessModal(false);
                                     router.push('/(drawer)/clientele/Home');
@@ -614,5 +655,34 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderBottomWidth: 1
+    },
+    timeSlotsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 5,
+    },
+    timeSlotChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        backgroundColor: '#E9ECEF',
+        borderWidth: 2,
+        borderColor: '#E9ECEF',
+        minWidth: '45%',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    timeSlotChipSelected: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    timeSlotChipText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#151E26',
+    },
+    timeSlotChipTextSelected: {
+        color: COLORS.white,
     },
 });

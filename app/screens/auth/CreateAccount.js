@@ -27,7 +27,7 @@ const CreateAccount = () => {
     const [departments, setDepartments] = useState([]);
     const [locations, setLocations] = useState([]);
     const [designations, setDesignations] = useState('');
-    const [selectedDepartment, setSelectedDepartment] = useState('');
+    const [selectedDepartments, setSelectedDepartments] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState('');
     const [license, setImage] = useState(null);
     const [avatar, setAvatar] = useState(null);
@@ -173,9 +173,15 @@ const CreateAccount = () => {
             Alert.alert('Missing Information', 'Please ensure all fields are filled out.');
             return;
         }
+
+        // Validate department selection
+        if (!selectedDepartments || selectedDepartments.length === 0) {
+            Alert.alert('Missing Information', 'Please select at least one department.');
+            return;
+        }
+
         try {
             setButtonDisabled(true);
-            const selectedDepartmentId = departments.find(dep => dep.name === selectedDepartment)?.id;
             const selectedLocationId = locations.find(loc => loc.location === selectedLocation)?.id;
             const formData = new FormData();
             formData.append('name', name);
@@ -183,9 +189,21 @@ const CreateAccount = () => {
             formData.append('phone', phone);
             formData.append('password', password);
             formData.append('designations', designations);
-            formData.append('department', selectedDepartmentId);
+            // Send departments as JSON array
+            formData.append('department', JSON.stringify(selectedDepartments));
             formData.append('location', selectedLocationId);
             formData.append('status', 0);
+            if (avatar) {
+                const filename = avatar.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename ?? '');
+                const type = match ? `image/${match[1]}` : `image`;
+
+                formData.append('image', {
+                    uri: avatar,
+                    name: filename,
+                    type,
+                });
+            }
             if (license) {
                 const filename = license.split('/').pop();
                 const match = /\.(\w+)$/.exec(filename ?? '');
@@ -197,18 +215,23 @@ const CreateAccount = () => {
                     type,
                 });
             }
+
+            console.log('Submitting form data:', formData);
             const response = await fetch(api_url + 'lawyer/registration', {
                 method: 'POST',
                 body: formData,
             });
             if (response.status === 200) {
                 const updatedUserData = { ...parsedUserData, user: { ...parsedUserData.user, name: name, email: email } };
+
+
                 await AsyncStorage.setItem('userData', JSON.stringify({ userType: 'lawyer', userData: updatedUserData }));
                 router.push({
                     pathname: '/screens/auth/SignIn',
                 });
                 showToast('Account created successfully');
             } else {
+                console.log('Registration failed with status:', response.status);
                 showToast('Registration failed. Please try again.');
             }
         } catch (error) {
@@ -309,31 +332,56 @@ const CreateAccount = () => {
                 <View>
                     <TextInput textAlign={i18next.language === 'ar' ? 'right' : 'left'} style={[styles.inputStyle, { borderColor: colorScheme === 'dark' ? COLORS.white : COLORS.title, color: colorScheme === 'dark' ? COLORS.white : COLORS.black }]} placeholder={t('Designation')} placeholderTextColor={colorScheme === 'dark' ? COLORS.white : colors.text} value={designations} onChangeText={text => setDesignations(text)} />
                 </View>
-                <SelectDropdown
-                    data={departments?.map(department => department.name) || []}
-                    defaultButtonText={t('SelectPreferredDepartment')}
-                    defaultValue={null}
-                    dropdownStyle={styles.dropdownMenuStyle}
-                    onSelect={(selectedItem) => setSelectedDepartment(selectedItem)}
-                    showsVerticalScrollIndicator={false}
-                    renderButton={(selectedItem) => (
-                        <View style={styles.dropdownButtonStyle}>
-                            <Text
-                                style={[
-                                    styles.dropdownButtonTxtStyle,
-                                    { textAlign: i18next.language === 'ar' ? 'right' : 'left' }
-                                ]}
-                            >
-                                {selectedItem ? selectedItem : t('SelectPreferredDepartment')}
-                            </Text>
-                        </View>
+                {/* Multi-Department Selection */}
+                <View style={styles.departmentContainer}>
+                    <Text style={[styles.departmentLabel, { color: colorScheme === 'dark' ? COLORS.white : COLORS.title }]}>
+                        {t('SelectPreferredDepartment')}
+                        {selectedDepartments.length > 0 && ` (${selectedDepartments.length} ${t('selected')})`}
+                    </Text>
+                    <View style={styles.departmentChipsContainer}>
+                        {departments.map((department) => {
+                            const isSelected = selectedDepartments.includes(department.id);
+                            return (
+                                <TouchableOpacity
+                                    key={department.id}
+                                    onPress={() => {
+                                        if (isSelected) {
+                                            // Remove department
+                                            setSelectedDepartments(selectedDepartments.filter(id => id !== department.id));
+                                        } else {
+                                            // Add department
+                                            setSelectedDepartments([...selectedDepartments, department.id]);
+                                        }
+                                    }}
+                                    style={[
+                                        styles.departmentChip,
+                                        isSelected && styles.departmentChipSelected
+                                    ]}
+                                >
+                                    <Text style={[
+                                        styles.departmentChipText,
+                                        isSelected && styles.departmentChipTextSelected
+                                    ]}>
+                                        {department.name}
+                                    </Text>
+                                    {isSelected && (
+                                        <Ionicons
+                                            name="checkmark-circle"
+                                            size={18}
+                                            color={COLORS.white}
+                                            style={{ marginLeft: 6 }}
+                                        />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                    {selectedDepartments.length === 0 && (
+                        <Text style={styles.departmentHint}>
+                            {t('TapToSelectDepartments')}
+                        </Text>
                     )}
-                    renderItem={(item, isSelected) => (
-                        <View style={{ flexDirection: "row", paddingHorizontal: 10, ...styles.dropdownItemStyle }}>
-                            <Text>{item || 'Unknown'}</Text>
-                        </View>
-                    )}
-                />
+                </View>
                 <SelectDropdown
                     data={locations?.map(location => location.location) || []}
                     defaultButtonText={t('SelectLocation')}
@@ -461,5 +509,48 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 15,
         borderBottomWidth: 1,
+    },
+    departmentContainer: {
+        width: '100%',
+    },
+    departmentLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 12,
+        color: COLORS.title,
+    },
+    departmentChipsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    departmentChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: SIZES.radius,
+        backgroundColor: '#E9ECEF',
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    departmentChipSelected: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    departmentChipText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#151E26',
+    },
+    departmentChipTextSelected: {
+        color: COLORS.white,
+        fontWeight: '600',
+    },
+    departmentHint: {
+        fontSize: 12,
+        color: '#999',
+        marginTop: 8,
+        fontStyle: 'italic',
     },
 });

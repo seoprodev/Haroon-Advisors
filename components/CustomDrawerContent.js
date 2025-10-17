@@ -34,10 +34,45 @@ export default function CustomDrawerContent(props) {
       const userDataString = await AsyncStorage.getItem('userData');
       if (userDataString) {
         const userDataJson = JSON.parse(userDataString);
+        console.log('Retrieved userData:', userDataJson);
         setUserData(userDataJson);
       }
     } catch (error) {
       console.log('Error retrieving userData:', error);
+    }
+  };
+
+  // Check if user has lawyer profile (based on lawyer-specific fields)
+  const hasLawyerProfile = () => {
+    if (!userData?.userData?.user) return false;
+    const user = userData.userData.user;
+    // Check for lawyer-specific fields
+    return !!(user.designations || user.department_id || user.ar_name || user.location_id);
+  };
+
+  // Check if user has client profile (always true if they have basic user data)
+  const hasClientProfile = () => {
+    return !!(userData?.userData?.user);
+  };
+
+  // Switch between client and lawyer roles
+  const handleRoleSwitch = async (newRole) => {
+    try {
+      const updatedUserData = {
+        ...userData,
+        userType: newRole
+      };
+      await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+      setUserData(updatedUserData);
+
+      // Navigate to appropriate home screen
+      if (newRole === 'client') {
+        router.replace('/(drawer)/clientele/Home');
+      } else {
+        router.replace('/(drawer)/lawyerele/LawyerHome');
+      }
+    } catch (error) {
+      console.log('Error switching role:', error);
     }
   };
 
@@ -98,6 +133,141 @@ export default function CustomDrawerContent(props) {
         style={{ padding: 0, marginTop: -10 }}
         scrollEnabled={true}>
         <DrawerItemList {...props} />
+
+        {/* Role Switcher Section */}
+        {userData && (
+          <View style={{
+            borderTopWidth: 1,
+            borderTopColor: '#dde3fe',
+            borderBottomWidth: 1,
+            borderBottomColor: '#dde3fe',
+            paddingVertical: 10,
+            marginVertical: 5,
+            backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f8f9fa'
+          }}>
+            {/* Current Role Badge */}
+            <View style={{
+              flexDirection: i18next.language === 'ar' ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingVertical: 8,
+              gap: 10
+            }}>
+              <Ionicons
+                name={userData.userType === 'lawyer' ? 'briefcase' : 'person'}
+                size={20}
+                color={COLORS.primary}
+              />
+              <ThemedText style={{
+                fontSize: 14,
+                fontWeight: '600',
+                color: COLORS.black
+              }}>
+                {userData.userType === 'lawyer' ? t('LawyerMode') : t('ClientMode')}
+              </ThemedText>
+            </View>
+
+            {/* Role Switcher Buttons */}
+            {hasLawyerProfile() && hasClientProfile() ? (
+              // User has both profiles - show switch button
+              <TouchableOpacity
+                onPress={() => handleRoleSwitch(userData.userType === 'client' ? 'lawyer' : 'client')}
+                style={{
+                  flexDirection: i18next.language === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  marginHorizontal: 10,
+                  marginTop: 8,
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 8,
+                  gap: 10
+                }}
+              >
+                <Ionicons
+                  name="swap-horizontal"
+                  size={20}
+                  color="white"
+                />
+                <Text style={{
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: 15,
+                  flex: 1,
+                  textAlign: i18next.language === 'ar' ? 'right' : 'left'
+                }}>
+                  {userData.userType === 'client' ? t('SwitchToLawyer') : t('SwitchToClient')}
+                </Text>
+              </TouchableOpacity>
+            ) : userData.userType === 'client' && !hasLawyerProfile() ? (
+              // Client-only user - show "Become a Lawyer" button
+              <TouchableOpacity
+                onPress={() => router.push({
+                  pathname: '/screens/BecomeLawyer',
+                  params: { userData: encodeURIComponent(JSON.stringify(userData.userData.user)) }
+                })}
+                style={{
+                  flexDirection: i18next.language === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  marginHorizontal: 10,
+                  marginTop: 8,
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 8,
+                  gap: 10
+                }}
+              >
+                <Ionicons
+                  name="briefcase-outline"
+                  size={20}
+                  color="white"
+                />
+                <Text style={{
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: 15,
+                  flex: 1,
+                  textAlign: i18next.language === 'ar' ? 'right' : 'left'
+                }}>
+                  {t('BecomeALawyer')}
+                </Text>
+              </TouchableOpacity>
+            ) : userData.userType === 'lawyer' && hasClientProfile() ? (
+              // Lawyer-only user but can switch to client - show switch button
+              <TouchableOpacity
+                onPress={() => handleRoleSwitch('client')}
+                style={{
+                  flexDirection: i18next.language === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  marginHorizontal: 10,
+                  marginTop: 8,
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 8,
+                  gap: 10
+                }}
+              >
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="white"
+                />
+                <Text style={{
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: 15,
+                  flex: 1,
+                  textAlign: i18next.language === 'ar' ? 'right' : 'left'
+                }}>
+                  {t('SwitchToClient')}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
+
         <DrawerItem
           label={() => (
             <Text style={{ color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg, textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>

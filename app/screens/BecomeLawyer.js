@@ -29,7 +29,7 @@ const BecomeLawyer = () => {
     const parsedUserData = userData ? JSON.parse(decodeURIComponent(userData)) : null;
     const router = useRouter();
     const [designations, setDesignations] = useState('');
-    const [selectedDepartment, setSelectedDepartment] = useState('');
+    const [selectedDepartments, setSelectedDepartments] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState('');
     const [license, setLicense] = useState(null);
     const [lawyerSubmitting, setLawyerSubmitting] = useState(false);
@@ -118,8 +118,8 @@ const BecomeLawyer = () => {
     };
 
     const handleSubmit = async () => {
-        if (!designations || !selectedDepartment || !selectedLocation || !license) {
-            Alert.alert('Missing Fields', 'Please fill in all required fields.');
+        if (!designations || selectedDepartments.length === 0 || !selectedLocation || !license) {
+            Alert.alert('Missing Fields', 'Please fill in all required fields and select at least one department.');
             return;
         }
 
@@ -130,10 +130,25 @@ const BecomeLawyer = () => {
             formData.append('email', parsedUserData.email || email);
             formData.append('phone', parsedUserData.phone || phone);
             formData.append('designations', designations);
-            const selectedDepartmentId = departments.find(dep => dep.name === selectedDepartment)?.id;
-            formData.append('department', selectedDepartmentId);
+            // Send departments as JSON array
+            formData.append('department', JSON.stringify(selectedDepartments));
             const selectedLocationId = locations.find(loc => loc.location === selectedLocation)?.id;
             formData.append('location', selectedLocationId);
+
+            // Add avatar/profile image if selected
+            if (avatar) {
+                const filename = avatar.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename ?? '');
+                const type = match ? `image/${match[1]}` : `image`;
+
+                formData.append('image', {
+                    uri: avatar,
+                    name: filename,
+                    type,
+                });
+            }
+
+            // Add license image
             formData.append('license', {
                 uri: license,
                 type: getMimeType(license),
@@ -288,29 +303,56 @@ const BecomeLawyer = () => {
                             }}
                         />
 
-                        {/* Department Dropdown */}
-                        <Text style={{ fontWeight: 'bold', marginBottom: 4, textAlign: i18next.language === 'ar' ? 'right' : 'left', }}>{t('SelectPreferredDepartment')}</Text>
-                        <SelectDropdown
-                            data={departments.map(department => department.name)}
-                            defaultButtonText={t('SelectPreferredDepartment')}
-                            defaultValue={null}
-                            dropdownStyle={styles.dropdownMenuStyle}
-                            onSelect={(selectedItem) => setSelectedDepartment(selectedItem)}
-                            showsVerticalScrollIndicator={false}
-                            renderButton={(selectedItem) => (
-                                <View style={styles.dropdownButtonStyle}>
-                                    <Text style={styles.dropdownButtonTxtStyle}>
-                                        {selectedItem ? selectedItem : t('SelectPreferredDepartment')}
-                                    </Text>
-                                </View>
+                        {/* Multi-Department Selection */}
+                        <View style={styles.departmentContainer}>
+                            <Text style={[styles.departmentLabel, { textAlign: i18next.language === 'ar' ? 'right' : 'left' }]}>
+                                {t('SelectPreferredDepartment')}
+                                {selectedDepartments.length > 0 && ` (${selectedDepartments.length} ${t('selected')})`}
+                            </Text>
+                            <View style={styles.departmentChipsContainer}>
+                                {departments.map((department) => {
+                                    const isSelected = selectedDepartments.includes(department.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={department.id}
+                                            onPress={() => {
+                                                if (isSelected) {
+                                                    // Remove department
+                                                    setSelectedDepartments(selectedDepartments.filter(id => id !== department.id));
+                                                } else {
+                                                    // Add department
+                                                    setSelectedDepartments([...selectedDepartments, department.id]);
+                                                }
+                                            }}
+                                            style={[
+                                                styles.departmentChip,
+                                                isSelected && styles.departmentChipSelected
+                                            ]}
+                                        >
+                                            <Text style={[
+                                                styles.departmentChipText,
+                                                isSelected && styles.departmentChipTextSelected
+                                            ]}>
+                                                {department.name}
+                                            </Text>
+                                            {isSelected && (
+                                                <Ionicons
+                                                    name="checkmark-circle"
+                                                    size={18}
+                                                    color={COLORS.white}
+                                                    style={{ marginLeft: 6 }}
+                                                />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                            {selectedDepartments.length === 0 && (
+                                <Text style={styles.departmentHint}>
+                                    {t('TapToSelectDepartments')}
+                                </Text>
                             )}
-                            renderItem={(item, isSelected) => (
-                                <View style={{ flexDirection: "row", paddingHorizontal: 10, ...styles.dropdownItemStyle }}>
-                                    <Text>{item}</Text>
-                                </View>
-                            )}
-
-                        />
+                        </View>
 
                         {/* Location Dropdown */}
                         <Text style={{ fontWeight: 'bold', marginBottom: 4, textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>{t('SelectLocation')}</Text>
@@ -485,5 +527,49 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.primayLight2,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    departmentContainer: {
+        width: '100%',
+        marginBottom: 20,
+    },
+    departmentLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 12,
+        color: COLORS.title,
+    },
+    departmentChipsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    departmentChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: SIZES.radius,
+        backgroundColor: '#E9ECEF',
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    departmentChipSelected: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    departmentChipText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#151E26',
+    },
+    departmentChipTextSelected: {
+        color: COLORS.white,
+        fontWeight: '600',
+    },
+    departmentHint: {
+        fontSize: 12,
+        color: '#999',
+        marginTop: 8,
+        fontStyle: 'italic',
     },
 });

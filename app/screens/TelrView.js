@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, StyleSheet, Dimensions, useColorScheme, TouchableOpacity, Text, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { Modal, View, StyleSheet, Dimensions, useColorScheme, TouchableOpacity, Text, Keyboard, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { base_url, COLORS } from '../../constants/theme';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +30,27 @@ const TelrView = ({ isVisible, url, onClose }) => {
       ? height * 0.9
       : height * 0.8;
 
+  const handleHttpError = ({ nativeEvent }) => {
+    console.warn('HTTP error: ', nativeEvent);
+
+    const errorMessage = nativeEvent.description || nativeEvent.statusCode
+      ? `Error ${nativeEvent.statusCode}: ${nativeEvent.description}`
+      : 'Payment gateway error occurred';
+
+    Alert.alert(
+      t('Payment Error'),
+      errorMessage,
+      [
+        {
+          text: t('OK'),
+          onPress: () => onClose(),
+          style: 'default'
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
     <Modal animationType="slide" transparent={true} visible={isVisible} onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -50,10 +71,8 @@ const TelrView = ({ isVisible, url, onClose }) => {
             domStorageEnabled={true}
             startInLoadingState={true}
             scrollEnabled={true}
-            onHttpError={({ nativeEvent }) => {
-              console.warn('HTTP error: ', nativeEvent);
-              onClose();
-            }}
+            onHttpError={handleHttpError}
+            onError={handleHttpError}
             style={styles.webView}
           />
           <View style={styles.buttonContainer}>
