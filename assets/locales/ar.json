@@ -242,5 +242,8 @@
   "SwitchToLawyer": "التبديل إلى محامٍ",
   "ClientMode": "وضع العميل",
   "LawyerMode": "وضع المحامي",
-  "SwitchRole": "تبديل الدور"
+  "SwitchRole": "تبديل الدور",
+  "Next10Days": "الأيام العشرة القادمة",
+  "NoAppointmentsInNext10Days": "لا توجد مواعيد في الأيام العشرة القادمة",
+  "TryViewingAllAppointments": "جرّب عرض جميع المواعيد لرؤية جدولك الكامل"
 }

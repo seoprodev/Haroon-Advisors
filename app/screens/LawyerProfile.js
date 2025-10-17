@@ -168,6 +168,11 @@ const LawyerProfile = () => {
                 return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00 ${period}`;
             };
 
+            // Format time for display without seconds
+            const formatTimeForDisplay = (timeStr) => {
+                return timeStr.replace(/:00 /, ' ');
+            };
+
             const start = parseTime(startTime);
             const end = parseTime(endTime);
 
@@ -191,11 +196,14 @@ const LawyerProfile = () => {
                 const slotEndHours = Math.floor(slotEndTime / 60);
                 const slotEndMinutes = slotEndTime % 60;
 
+                const slotStart = formatTime(slotHours, slotMinutes);
+                const slotEnd = formatTime(slotEndHours, slotEndMinutes);
+
                 timeSlots.push({
                     scheduleID: schedule["ID"],
-                    startTime: formatTime(slotHours, slotMinutes),
-                    endTime: formatTime(slotEndHours, slotEndMinutes),
-                    displayText: `${formatTime(slotHours, slotMinutes)} - ${formatTime(slotEndHours, slotEndMinutes)}`
+                    startTime: slotStart,
+                    endTime: slotEnd,
+                    displayText: `${formatTimeForDisplay(slotStart)} - ${formatTimeForDisplay(slotEnd)}`
                 });
             }
         });

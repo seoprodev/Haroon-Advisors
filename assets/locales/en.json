@@ -243,5 +243,8 @@
   "SwitchToLawyer": "Switch to Lawyer",
   "ClientMode": "Client Mode",
   "LawyerMode": "Lawyer Mode",
-  "SwitchRole": "Switch Role"
+  "SwitchRole": "Switch Role",
+  "Next10Days": "Next 10 Days",
+  "NoAppointmentsInNext10Days": "No Appointments in Next 10 Days",
+  "TryViewingAllAppointments": "Try viewing all appointments to see your complete schedule"
 }

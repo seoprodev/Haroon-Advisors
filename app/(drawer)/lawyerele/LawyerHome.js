@@ -7,7 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SIZES, FONTS, api_url } from '../../../constants/theme';
 import Toast from 'react-native-simple-toast';
 import { useNetworkState } from 'expo-network';
-import { SafeAreaView, ScrollView, BackHandler, useColorScheme, StatusBar, View, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView, ScrollView, BackHandler, useColorScheme, StatusBar, View, Text, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
+import i18next from 'i18next';
 
 const LawyerHome = () => {
     const colorScheme = useColorScheme();
@@ -16,6 +17,7 @@ const LawyerHome = () => {
     const [userType, setUserType] = useState();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [filterType, setFilterType] = useState('all'); // 'all' or 'next10days'
     const { t } = useTranslation();
     const networkState = useNetworkState();
 
@@ -77,21 +79,101 @@ const LawyerHome = () => {
         fetchAppointments();
     }, []);
 
+    // Filter appointments based on selected filter type
+    const getFilteredAppointments = () => {
+        if (filterType === 'all') {
+            return appointmentData;
+        } else if (filterType === 'next10days') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tenDaysLater = new Date(today);
+            tenDaysLater.setDate(today.getDate() + 10);
+
+            return appointmentData.filter(appointment => {
+                // API returns "Date" field (capital D)
+                const appointmentDate = new Date(appointment.Date || appointment.date);
+                appointmentDate.setHours(0, 0, 0, 0);
+                return appointmentDate >= today && appointmentDate <= tenDaysLater;
+            });
+        }
+        return appointmentData;
+    };
+
+    const filteredAppointments = getFilteredAppointments();
+
     return (
         <SafeAreaView style={[{ flex: 1, backgroundColor: colorScheme === 'dark' ? COLORS.black : COLORS.white }]}>
             <StatusBar backgroundColor={COLORS.primary} />
+
+            {/* Filter Buttons */}
+            <View style={[styles.filterContainer, { backgroundColor: colorScheme === 'dark' ? COLORS.betabg : '#F5F5F5' }]}>
+                <TouchableOpacity
+                    style={[
+                        styles.filterButton,
+                        filterType === 'all' && styles.filterButtonActive,
+                        { flex: 1 }
+                    ]}
+                    onPress={() => setFilterType('all')}
+                >
+                    <Text style={[
+                        styles.filterButtonText,
+                        filterType === 'all' && styles.filterButtonTextActive,
+                        { color: filterType === 'all' ? COLORS.white : (colorScheme === 'dark' ? COLORS.white : COLORS.betabg) }
+                    ]}>
+                        {t('AllAppointments')}
+                    </Text>
+                    {filterType === 'all' && appointmentData.length > 0 && (
+                        <View style={styles.badgeContainer}>
+                            <Text style={styles.badgeText}>{appointmentData.length}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[
+                        styles.filterButton,
+                        filterType === 'next10days' && styles.filterButtonActive,
+                        { flex: 1, marginLeft: 10 }
+                    ]}
+                    onPress={() => setFilterType('next10days')}
+                >
+                    <Text style={[
+                        styles.filterButtonText,
+                        filterType === 'next10days' && styles.filterButtonTextActive,
+                        { color: filterType === 'next10days' ? COLORS.white : (colorScheme === 'dark' ? COLORS.white : COLORS.betabg) }
+                    ]}>
+                        {t('Next10Days')}
+                    </Text>
+                    {filterType === 'next10days' && filteredAppointments.length > 0 && (
+                        <View style={styles.badgeContainer}>
+                            <Text style={styles.badgeText}>{filteredAppointments.length}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            </View>
+
             <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={{ paddingVertical: 10, paddingHorizontal: 10 }}>
                 {loading ? (
                     <ActivityIndicator size="large" color={COLORS.primary} />
                 ) : (
-                    appointmentData.length === 0 ? (
+                    filteredAppointments.length === 0 ? (
                         <View style={{ alignItems: 'center', marginTop: 150, marginHorizontal: 20, paddingHorizontal: 25, paddingVertical: 25, backgroundColor: colorScheme === 'dark' ? COLORS.betabg : COLORS.white, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.primary }}>
                             <FontAwesome style={{ marginBottom: 10 }} color={COLORS.primary} size={100} name="calendar" />
-                            <Text style={{ ...FONTS.h5, color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg, textAlign: 'center' }}>{t('NoAppointmentsYet')}</Text>
-                            <Text style={{ ...FONTS.font, color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg, textAlign: 'center' }}>{t('NoClientsConnected')}</Text>
+                            <Text style={{ ...FONTS.h5, color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg, textAlign: 'center' }}>
+                                {filterType === 'all' ? t('NoAppointmentsYet') : t('NoAppointmentsInNext10Days')}
+                            </Text>
+                            <Text style={{ ...FONTS.font, color: colorScheme === 'dark' ? COLORS.white : COLORS.betabg, textAlign: 'center' }}>
+                                {filterType === 'all' ? t('NoClientsConnected') : t('TryViewingAllAppointments')}
+                            </Text>
                         </View>
                     ) : (
-                        <UserAppointments title={t('AllAppointments')} appointmentData={appointmentData} userData={userData} userType={userType} onRefresh={fetchAppointments} />
+                        <UserAppointments
+                            title={filterType === 'all' ? t('AllAppointments') : t('Next10Days')}
+                            appointmentData={filteredAppointments}
+                            userData={userData}
+                            userType={userType}
+                            onRefresh={fetchAppointments}
+                        />
                     )
                 )}
             </ScrollView>
@@ -100,3 +182,62 @@ const LawyerHome = () => {
 };
 
 export default LawyerHome;
+
+const styles = StyleSheet.create({
+    filterContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 10,
+        paddingVertical: 12,
+        gap: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.primary + '20',
+    },
+    filterButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: SIZES.radius,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: COLORS.primary + '40',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        position: 'relative',
+    },
+    filterButtonActive: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+        shadowColor: COLORS.primary,
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    filterButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    filterButtonTextActive: {
+        color: COLORS.white,
+        fontWeight: '700',
+    },
+    badgeContainer: {
+        backgroundColor: COLORS.white,
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        marginLeft: 8,
+        minWidth: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    badgeText: {
+        color: COLORS.primary,
+        fontSize: 12,
+        fontWeight: '700',
+    },
+});
