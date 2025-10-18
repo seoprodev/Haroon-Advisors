@@ -11,12 +11,12 @@ export const languageResources = {
 };
 
 // Function to retrieve language preference and initialize i18next
-const initializeI18next = async () => {
+export const initializeI18next = async () => {
     try {
         const storedLanguage = await AsyncStorage.getItem('language');
         const languageToUse = storedLanguage || 'en'; // Use stored language or default to English
 
-        i18next
+        return i18next
             .use(initReactI18next)
             .init({
                 compatibilityJSON: 'v3',
@@ -29,17 +29,19 @@ const initializeI18next = async () => {
                 },
             });
     } catch (error) {
-        console.log('Error retrieving language preference:', error);
+        console.error('Error retrieving language preference:', error);
         // If there's an error, default to English
-        i18next.init({
+        return i18next.use(initReactI18next).init({
+            compatibilityJSON: 'v3',
             lng: 'en',
             fallbackLng: 'ar',
             resources: languageResources,
+            debug: false,
+            interpolation: {
+                escapeValue: false,
+            },
         });
     }
 };
-
-// Call the function to initialize
-initializeI18next();
 
 export default i18next;

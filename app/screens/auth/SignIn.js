@@ -435,7 +435,9 @@ const SignIn = ({ navigation }) => {
           ]}>
             <ScrollView contentContainerStyle={{ flexGrow: 1, padding: Platform.OS === "ios" ? 10 : 0 }} keyboardShouldPersistTaps='handled'>
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', }}>
-                <Image style={{ width: '80%', height: 150, resizeMode: "contain" }} source={colorScheme === "dark" ? IMAGES.appLogo : IMAGES.darkappLogo} />
+                <Image style={{
+                  width: '80%', height: 150, resizeMode: "contain", marginBottom: 16,
+                }} source={colorScheme === "dark" ? IMAGES.appLogo : IMAGES.darkappLogo} />
 
                 {currentView === 'Language' && (
                   <View style={{ gap: 10, }}>

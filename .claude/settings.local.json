@@ -7,7 +7,9 @@
       "Bash(npx expo prebuild:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(adb logcat:*)",
+      "Bash(unzip:*)"
     ],
     "deny": [],
     "ask": []

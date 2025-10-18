@@ -127,7 +127,11 @@ const HomeScreen = () => {
 
   return (
     <ThemedView style={styles.container}>
-      <Image style={{ width: '80%', height: 150, resizeMode: "contain", alignSelf: 'center' }} source={colorScheme === "dark" ? IMAGES.appLogo : IMAGES.darkappLogo} />
+      <View style={{
+        height: 160, justifyContent: 'center', alignItems: 'center',
+      }}>
+        <Image style={{ width: '80%', height: 150, resizeMode: "contain", alignSelf: 'center' }} source={colorScheme === "dark" ? IMAGES.appLogo : IMAGES.darkappLogo} />
+      </View>
       <ThemedButton title="Welcome to Haroon Advisors!" type='primary' onPress={() => router.push('/screens/auth/SignIn')} />
     </ThemedView>
   );

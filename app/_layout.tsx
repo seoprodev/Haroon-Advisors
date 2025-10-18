@@ -8,10 +8,9 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Network from 'expo-network';
 import { COLORS } from '@/constants/theme';
-import i18n from '@/app/services/i18next';
+import i18n, { initializeI18next } from '@/app/services/i18next';
 import { ActivityIndicator, Dimensions, Platform, StyleSheet, Text, View, Image } from 'react-native';
 import { ZoomVideoSdkProvider } from '@zoom/react-native-videosdk';
-import { useTranslation } from 'react-i18next';
 
 const Overlay = () => {
   return (
@@ -28,7 +27,6 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [appReady, setAppReady] = useState(false);
-  const { t } = useTranslation();
 
   // Load fonts
   const [loaded] = useFonts({
@@ -51,9 +49,15 @@ export default function RootLayout() {
   // Once fonts load → init translations → mark ready
   useEffect(() => {
     if (loaded) {
-      i18n.init().finally(() => {
-        setAppReady(true);
-      });
+      initializeI18next()
+        .then(() => {
+          setAppReady(true);
+        })
+        .catch((error) => {
+          console.error('Failed to initialize i18n:', error);
+          // Still mark app as ready even if i18n fails (fallback to default language)
+          setAppReady(true);
+        });
     }
   }, [loaded]);
 
@@ -79,88 +83,92 @@ export default function RootLayout() {
   }
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StatusBar style="auto" />
-      <ZoomVideoSdkProvider
-        config={{
-          appGroupId: 'group.us.zoom.HaroonZoomVideoSDK',
-          domain: 'zoom.us',
-          enableLog: true,
-        }}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false, title: isConnected === false ? t('NoInternetConnection') : t('HaroonAdvisors') }} />
-          <Stack.Screen name="(drawer)" options={{ headerShown: false, title: t('Clientele') }} />
-          <Stack.Screen
-            name="screens/auth/SignIn"
-            options={{
-              headerShown: false,
-              headerTransparent: Platform.OS === 'ios',
-              headerBackVisible: true,
-              title: t('SignIn'),
-              headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
-            }}
-          />
-          <Stack.Screen name="screens/auth/CreateAccount" options={{
-            headerShown: true,
-            headerTransparent: Platform.OS === 'ios',
-            headerBackVisible: true,
-            headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
-            title: t('CreateAccount')
-          }} />
-          <Stack.Screen name="screens/Profile" options={{
-            headerShown: true, title: t('Profile'),
-            headerTransparent: Platform.OS === 'ios',
-            headerBackVisible: true,
-            headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
-          }} />
-          <Stack.Screen name="screens/BecomeLawyer" options={{
-            headerShown: true,
-            headerTransparent: Platform.OS === 'ios',
-            headerBackVisible: true,
-            headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
-            title: t('BecomeALawyer')
-          }} />
-          <Stack.Screen name="screens/OnlineLawyers" options={{ headerShown: true, title: t('OnlineLawyers') }} />
-          <Stack.Screen name="screens/SearchLawyers" options={{ headerShown: true, title: t('AllLawyers') }} />
-          <Stack.Screen name="screens/AllNotifications" options={{ headerShown: true, title: t('Notifications') }} />
-          <Stack.Screen name="screens/LawyerProfile" options={{ headerShown: true, title: t('AllLawyers') }} />
-          <Stack.Screen
-            name="screens/chat/ChatScreen"
-            options={{
+      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+
+
+        <StatusBar style="auto" />
+        <ZoomVideoSdkProvider
+          config={{
+            appGroupId: 'group.us.zoom.HaroonZoomVideoSDK',
+            domain: 'zoom.us',
+            enableLog: true,
+          }}>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false, title: isConnected === false ? i18n.t('NoInternetConnection') : i18n.t('HaroonAdvisors') }} />
+            <Stack.Screen name="(drawer)" options={{ headerShown: false, title: i18n.t('Clientele') }} />
+            <Stack.Screen
+              name="screens/auth/SignIn"
+              options={{
+                headerShown: false,
+                headerTransparent: Platform.OS === 'ios',
+                headerBackVisible: true,
+                title: i18n.t('SignIn'),
+                headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
+              }}
+            />
+            <Stack.Screen name="screens/auth/CreateAccount" options={{
               headerShown: true,
               headerTransparent: Platform.OS === 'ios',
               headerBackVisible: true,
-              title: t('ChatScreen'),
               headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
-            }}
-          />
-          <Stack.Screen
-            name="screens/chat/WebViewScreen"
-            options={{
-              headerShown: false,
+              title: i18n.t('CreateAccount')
+            }} />
+            <Stack.Screen name="screens/Profile" options={{
+              headerShown: true, title: i18n.t('Profile'),
               headerTransparent: Platform.OS === 'ios',
               headerBackVisible: true,
-              title: t('LiveSession'),
-              headerTintColor: Platform.OS === 'ios' ? COLORS.primary : COLORS.primary,
-            }}
-          />
-          <Stack.Screen
-            name="screens/chat/CallScreen"
-            options={{
+              headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
+            }} />
+            <Stack.Screen name="screens/BecomeLawyer" options={{
               headerShown: true,
               headerTransparent: Platform.OS === 'ios',
               headerBackVisible: true,
-              title: t('LiveSession'),
-              headerTintColor: Platform.OS === 'ios' ? COLORS.primary : COLORS.primary,
-            }}
-          />
-          <Stack.Screen name="screens/PrivacyPolicy" options={{ headerShown: true, title: t('PrivacyPolicy') }} />
-          <Stack.Screen name="screens/Terms&Use" options={{ headerShown: true, title: t('TermsUse') }} />
-          <Stack.Screen name="screens/Lawyers" options={{ headerShown: true, title: t('Lawyers') }} />
-          <Stack.Screen name="screens/DeleteAccount" options={{ headerShown: true, title: t('DeleteAccount') }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        {isConnected === false && <Overlay />}
-      </ZoomVideoSdkProvider>
+              headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
+              title: i18n.t('BecomeALawyer')
+            }} />
+            <Stack.Screen name="screens/OnlineLawyers" options={{ headerShown: true, title: i18n.t('OnlineLawyers') }} />
+            <Stack.Screen name="screens/SearchLawyers" options={{ headerShown: true, title: i18n.t('AllLawyers') }} />
+            <Stack.Screen name="screens/AllNotifications" options={{ headerShown: true, title: i18n.t('Notifications') }} />
+            <Stack.Screen name="screens/LawyerProfile" options={{ headerShown: true, title: i18n.t('AllLawyers') }} />
+            <Stack.Screen
+              name="screens/chat/ChatScreen"
+              options={{
+                headerShown: true,
+                headerTransparent: Platform.OS === 'ios',
+                headerBackVisible: true,
+                title: i18n.t('ChatScreen'),
+                headerTintColor: colorScheme === 'light' ? COLORS.betabg : COLORS.primary,
+              }}
+            />
+            <Stack.Screen
+              name="screens/chat/WebViewScreen"
+              options={{
+                headerShown: false,
+                headerTransparent: Platform.OS === 'ios',
+                headerBackVisible: true,
+                title: i18n.t('LiveSession'),
+                headerTintColor: Platform.OS === 'ios' ? COLORS.primary : COLORS.primary,
+              }}
+            />
+            <Stack.Screen
+              name="screens/chat/CallScreen"
+              options={{
+                headerShown: true,
+                headerTransparent: Platform.OS === 'ios',
+                headerBackVisible: true,
+                title: i18n.t('LiveSession'),
+                headerTintColor: Platform.OS === 'ios' ? COLORS.primary : COLORS.primary,
+              }}
+            />
+            <Stack.Screen name="screens/PrivacyPolicy" options={{ headerShown: true, title: i18n.t('PrivacyPolicy') }} />
+            <Stack.Screen name="screens/Terms&Use" options={{ headerShown: true, title: i18n.t('TermsUse') }} />
+            <Stack.Screen name="screens/Lawyers" options={{ headerShown: true, title: i18n.t('Lawyers') }} />
+            <Stack.Screen name="screens/DeleteAccount" options={{ headerShown: true, title: i18n.t('DeleteAccount') }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          {isConnected === false && <Overlay />}
+        </ZoomVideoSdkProvider>
+      </View>
     </ThemeProvider>
   );
 }
