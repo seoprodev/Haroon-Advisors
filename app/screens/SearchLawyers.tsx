@@ -35,10 +35,10 @@ const AllLawyers: React.FC = () => {
           const data = await response.json();
           setLawyerData(data);
         } else {
-          console.log('User data not available');
+          // console.log('User data not available');
         }
       } catch (error) {
-        console.log('Error fetching lawyer data:', error.message);
+        // console.log('Error fetching lawyer data:', error.message);
       }
     };
 

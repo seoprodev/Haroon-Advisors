@@ -112,7 +112,7 @@ const LawyerProfile = () => {
             const { schedules } = await response.json();
 
 
-            console.log('Fetched schedules:', schedules); // Debug log
+            // console.log('Fetched schedules:', schedules); // Debug log
             if (response.ok) {
                 setSchedules(schedules);
             } else {
@@ -271,7 +271,7 @@ const LawyerProfile = () => {
                 phone: userData.user.phone,
             };
 
-            console.log('Appointment Request Body:', appointmentRequestBody); // Debug log
+            // console.log('Appointment Request Body:', appointmentRequestBody); // Debug log
 
             const token = await AsyncStorage.getItem('jwtToken');
             const response = await axios.post(`${api_url}telr-payment-form`, appointmentRequestBody, {
@@ -285,9 +285,9 @@ const LawyerProfile = () => {
             setWebViewVisible(true);
             setModalVisible(false);
         } catch (error) {
-            console.log('Error creating appointment:', error);
-            console.log('Error creating appointment:', error.message);
-            console.log('Error creating appointment response:', error.response);
+            // console.log('Error creating appointment:', error);
+            // console.log('Error creating appointment:', error.message);
+            // console.log('Error creating appointment response:', error.response);
             if (error.response) {
                 Toast.show('Failed to create appointment: ' + (error.response.data.error || 'Server error occurred.'), Toast.LONG);
             } else if (error.request) {
