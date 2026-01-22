@@ -102,8 +102,8 @@ const Profile = () => {
         return (
             userData.name !== originalData.name ||
             userData.lname !== originalData.lname ||
-            userData.email !== originalData.email ||
-            userData.phone !== originalData.phone
+            userData.email !== originalData.email
+            //userData.phone !== originalData.phone
         );
     };
     const handleSave = async () => {
@@ -156,7 +156,7 @@ const Profile = () => {
                     name: result.user.name,
                     lname: result.user.lname,
                     email: result.user.email,   // ✅ Add this
-                    phone: result.user.phone,   // ✅ And this
+                    //phone: result.user.phone,
                     image: result.user.image,
                 };
                 const updatedUserData = {
