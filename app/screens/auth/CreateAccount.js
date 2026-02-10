@@ -119,14 +119,17 @@ const CreateAccount = () => {
             );
             return;
         }
+
         try {
             setButtonDisabled(true);
+
             const requestBody = {
-                name: name,
-                email: email,
-                phone: phone,
-                password: password
+                name,
+                email,
+                phone,
+                password,
             };
+
             const response = await fetch(api_url + prefix + 'registration', {
                 method: 'POST',
                 headers: {
@@ -134,14 +137,28 @@ const CreateAccount = () => {
                 },
                 body: JSON.stringify(requestBody),
             });
-            if (response.status === 200) {
+
+            const data = await response.json();
+
+            // ✅ SUCCESS (Laravel returns 201)
+            if (response.status === 201 || response.status === 200) {
+                showToast('Account created successfully');
                 router.push({
                     pathname: '/screens/auth/SignIn',
                 });
-                showToast('Account created successfully');
-            } else {
-                showToast('Registration failed. Please try again.');
+                return;
             }
+
+            // ⚠️ VALIDATION ERRORS (422)
+            if (response.status === 422 && data.errors) {
+                const firstError = Object.values(data.errors)[0][0];
+                showToast(firstError);
+                return;
+            }
+
+            // ❌ OTHER ERRORS
+            showToast(data.error || 'Registration failed. Please try again.');
+
         } catch (error) {
             console.log('Error:', error);
             showToast('An error occurred. Please try again later.');
