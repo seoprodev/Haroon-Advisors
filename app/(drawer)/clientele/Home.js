@@ -7,7 +7,7 @@ import FeaturedLawyers from '../../../components/FeaturedLawyers';
 import DepartmentsSlider from '../../../components/DepartmentsSlider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { SafeAreaView, ScrollView, BackHandler, useColorScheme, StatusBar, View, RefreshControl, Platform, Text } from 'react-native';
+import { SafeAreaView, ScrollView, BackHandler, useColorScheme, StatusBar, View, RefreshControl, Platform, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import i18next from 'i18next';
 
@@ -35,9 +35,15 @@ const HomeScreen = () => {
   }, []);
 
   useEffect(() => {
+    if (!Array.isArray(lawyerData)) {
+      setFilteredLawyers([]);
+      return;
+    }
+
     const filtered = lawyerData.filter(lawyer =>
-      lawyer.name.toLowerCase().includes(searchQuery.toLowerCase())
+      lawyer.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
     setFilteredLawyers(filtered);
   }, [searchQuery, lawyerData]);
 
@@ -186,10 +192,36 @@ const HomeScreen = () => {
             </View>
           </View>
         )}
-        <FeaturedLawyers title={t('FeaturedLawyers')} lawyerData={filteredLawyers} btnTitle={t('ShowAll')} navRoute="/screens/SearchLawyers" />
+
+
+        {filteredLawyers.length === 0 ? (
+          <Text style={styles.emptyText}>
+            {t('No Lawyers Found Please Try again later!')}
+          </Text>
+        ) : (
+          <FeaturedLawyers
+            title={t('FeaturedLawyers')}
+            lawyerData={filteredLawyers}
+            btnTitle={t('ShowAll')}
+            navRoute="/screens/SearchLawyers"
+          />
+        )}
+
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+
+const styles = StyleSheet.create({
+
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 32,
+    color: "#808080",
+  },
+
+});
 
 export default HomeScreen;

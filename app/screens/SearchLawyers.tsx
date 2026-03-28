@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, ScrollView, useColorScheme, StatusBar, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, useColorScheme, StatusBar, StyleSheet, KeyboardAvoidingView, Platform, Text } from 'react-native';
 import FeaturedLawyers from '../../components/FeaturedLawyers';
 import { COLORS, api_url } from '../../constants/theme';
 import SearchBar from '../../components/SearchBar';
@@ -46,11 +46,19 @@ const AllLawyers: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // If API returned an error object
+    if (!Array.isArray(lawyerData)) {
+      setFilteredLawyers([]);
+      return;
+    }
+
     const filtered = lawyerData.filter(lawyer =>
-      lawyer.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      lawyer.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
     setFilteredLawyers(filtered);
   }, [searchQuery, lawyerData]);
+
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -72,12 +80,18 @@ const AllLawyers: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           <SearchBar handleSearch={handleSearch} />
-          <FeaturedLawyers
-            title={t('AllAttorneysAtLaw')}
-            lawyerData={filteredLawyers}
-            btnTitle={undefined}
-            navRoute={undefined}
-          />
+          {filteredLawyers.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {t('No Lawyers Found Please Try again later!')}
+            </Text>
+          ) : (
+            <FeaturedLawyers
+              title={t('AllAttorneysAtLaw')}
+              lawyerData={filteredLawyers}
+              btnTitle={undefined}
+              navRoute={undefined}
+            />
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -92,6 +106,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
   },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 16,
+    color: "#808080",
+  },
+
 });
 
 export default AllLawyers;

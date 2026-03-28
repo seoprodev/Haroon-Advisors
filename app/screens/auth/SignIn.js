@@ -61,6 +61,15 @@ const SignIn = ({ navigation }) => {
   const otpRef = useRef('');
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+  async function safeJson(response) {
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null; // Not JSON (likely redirect HTML)
+    }
+  }
+
   const initializeApp = async () => {
     await fetchGoogleWebClientId();
     await fetchGoogleiOSClientId();
@@ -250,7 +259,8 @@ const SignIn = ({ navigation }) => {
           setCurrentView('EnterCode');
           showToast(`OTP sent to ${mockUserData.user.phone}`);
         } else {
-          showToast('Error Occurred');
+          showToast('Invalid Phone Number!!');
+          return false;
         }
       } else {
         showToast('Critical Error');
@@ -281,59 +291,102 @@ const SignIn = ({ navigation }) => {
       return;
     }
     try {
-      const response = await fetch(api_url + prefix + 'login-with-email', {
+      const payload = {
+        email,
+        password,
+        ipaddress: await Network.getIpAddressAsync(),
+        modelname: Device.modelName,
+        expo_push_token: expoPushToken,
+      };
+
+      // 🔹 First attempt: CLIENT login
+      let response = await fetch(api_url + prefix + 'login-with-email', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json", // ✅ IMPORTANT
         },
-        body: JSON.stringify({
-          email,
-          password,
-          ipaddress: await Network.getIpAddressAsync(),
-          modelname: Device.modelName,
-          expo_push_token: expoPushToken,
-        }),
+        body: JSON.stringify(payload),
       });
-      const userData = await response.json();
+
+      let userData = await safeJson(response);
+
       if (response.status === 200) {
-        setShowCredentials(false);
         let userType = 'client';
-        await AsyncStorage.setItem('userData', JSON.stringify({ userType, userData }));
+
+        await AsyncStorage.setItem(
+          'userData',
+          JSON.stringify({ userType, userData })
+        );
+
+        setShowCredentials(false);
+
         router.push({
           pathname: '/(drawer)/clientele/Home',
           params: { userType, userData },
         });
+
         showToast(`Welcome, ${userData.user.name}.`);
-      } else if (response.status === 401) {
-        const response = await fetch(api_url + lawyerprefix + 'login-with-email', {
+        return;
+      }
+
+      // 🔹 If client login fails → try LAWYER login
+      if (response.status === 401) {
+        response = await fetch(api_url + lawyerprefix + 'login-with-email', {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Accept": "application/json", // ✅ IMPORTANT
           },
-          body: JSON.stringify({
-            email,
-            password,
-            ipaddress: await Network.getIpAddressAsync(),
-            modelname: Device.modelName,
-            expo_push_token: expoPushToken,
-          }),
+          body: JSON.stringify(payload),
         });
-        const userData = await response.json();
-        if (response.status === 404) {
+
+        userData = await safeJson(response);
+
+        if (response.status === 200) {
+          let userType = 'lawyer';
+
+          await AsyncStorage.setItem(
+            'userData',
+            JSON.stringify({ userType, userData })
+          );
+
+          setShowCredentials(false);
+
+          router.push({
+            pathname: '/(drawer)/lawyerele/LawyerHome',
+            params: { userType, userData },
+          });
+
+          showToast(`Welcome, ${userData.user.name}.`);
+          return;
+        }
+
+        if (response.status === 401 || response.status === 404) {
           showToast("Invalid credentials");
           return;
         }
-        setShowCredentials(false);
-        let userType = 'lawyer';
-        await AsyncStorage.setItem('userData', JSON.stringify({ userType, userData }));
-        router.push({
-          pathname: '/(drawer)/lawyerele/LawyerHome',
-          params: { userType, userData },
-        });
-      } else {
-        showToast("Error", data.error || "Invalid credentials");
       }
+
+      // 🔴 Validation or other errors
+      if (response.status === 422) {
+        const errors = userData?.errors;
+
+        if (errors) {
+          // Get first error message from any field
+          const firstError = Object.values(errors)[0][0];
+          showToast(firstError);
+        } else {
+          showToast("Validation error");
+        }
+
+        return;
+      }
+
+      showToast(userData?.error || "Something went wrong");
+
     } catch (error) {
+      console.error(error);
       showToast("Something went wrong. Please try again.");
     }
   };

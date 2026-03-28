@@ -5,8 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api_url, COLORS, IMAGES, ICONS, SIZES } from '../../constants/theme';
 import { SafeAreaView, StyleSheet, Text, TextInput, View, Alert, Image, StatusBar, useColorScheme, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, DevSettings } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+
 import { useRouter } from 'expo-router';
 import i18next, { t } from 'i18next';
+
+
+
 const Profile = () => {
     const colorScheme = useColorScheme();
     const router = useRouter();
@@ -60,6 +64,8 @@ const Profile = () => {
         );
     };
 
+
+
     const fetchUserData = async () => {
         try {
             const userDataString = await AsyncStorage.getItem('userData');
@@ -84,7 +90,7 @@ const Profile = () => {
             [field]: value,
         }));
     };
-    const pickImage = async () => {
+    /*const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             allowsEditing: true,
@@ -93,6 +99,31 @@ const Profile = () => {
         });
         if (!result.canceled) {
             setSelectedImage(result.assets[0].uri);
+        }
+    }; */
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.7,
+        });
+
+        if (!result.canceled) {
+            const asset = result.assets[0];
+
+            let fileUri = asset.uri;
+
+            // Fix iOS ph:// URI
+            if (fileUri.startsWith('ph://')) {
+                const newPath = FileSystem.cacheDirectory + 'photo.jpg';
+                await FileSystem.copyAsync({ from: fileUri, to: newPath });
+                fileUri = newPath;
+            }
+
+            setSelectedImage({
+                uri: fileUri,
+                name: asset.fileName || 'photo.jpg',
+                type: asset.type === 'image' ? 'image/jpeg' : asset.type,
+            });
         }
     };
     const hasChanges = () => {
@@ -106,59 +137,79 @@ const Profile = () => {
             //userData.phone !== originalData.phone
         );
     };
+
     const handleSave = async () => {
         if (!userData.name || !userData.lname || !userData.email || userData.phone == "+971") {
             Alert.alert('Missing Information', 'Please fill in all required fields: First Name, Last Name, Email, and Phone.');
             return;
         }
-
-        if (!hasChanges()) return;
+        //if (!hasChanges()) return;
 
         if (!userData.name?.trim()) {
             nameInputRef.current.focus();
             scrollViewRef.current?.scrollTo({ y: 0, animated: true });
             return;
         }
-        if (!userData.email?.trim() || !isEmailValid(userData.email)) {
+        /*if (!userData.email?.trim() || !isEmailValid(userData.email)) {
             emailInputRef.current.focus();
             scrollViewRef.current?.scrollTo({ y: 100, animated: true });
             return;
-        }
+        }*/
 
-        setLoading(true);
-        try {
+        setLoading(true); try {
             const formData = new FormData();
 
             if (userData.name?.trim()) formData.append('name', userData.name.trim());
             if (userData.lname?.trim()) formData.append('lname', userData.lname.trim());
             if (userData.email?.trim()) formData.append('email', userData.email.trim());
-            // if (userData.phone?.trim() && userData.phone !== '+971') formData.append('phone', userData.phone.trim());
             if (userData.phone?.trim()) formData.append('phone', userData.phone.trim());
 
             if (selectedImage) {
-                formData.append('image', {
-                    uri: selectedImage,
-                    type: 'image/jpeg',
-                    name: 'profile.jpg',
-                });
+                // selectedImage should be { uri, name, type }
+                formData.append('image', selectedImage);
             }
-            const updateURL = api_url + (userType === 'lawyer' ? 'lawyer' : 'client') + '/update-profile';
+
+            const updateURL =
+                api_url + (userType === 'lawyer' ? 'lawyer' : 'client') + '/update-profile';
+
             const response = await fetch(updateURL, {
                 method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    // Authorization: `Bearer ${token}`, // if route is protected
+                },
                 body: formData,
             });
-            const result = await response.json();
+
+            // Parse safely
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                console.log('RAW RESPONSE:', text);
+                throw new Error('Invalid JSON response from server');
+            }
+
+            console.log('STATUS:', response.status);
+            console.log('RESULT:', result);
+
+            // ✅ Success
             if (response.ok) {
                 const currentUserDataString = await AsyncStorage.getItem('userData');
-                const currentUserData = currentUserDataString ? JSON.parse(currentUserDataString) : {};
+                const currentUserData = currentUserDataString
+                    ? JSON.parse(currentUserDataString)
+                    : {};
+
                 const updatedUser = {
                     ...currentUserData.userData.user,
                     name: result.user.name,
                     lname: result.user.lname,
-                    email: result.user.email,   // ✅ Add this
-                    //phone: result.user.phone,
+                    email: result.user.email,
+                    phone: result.user.phone,
                     image: result.user.image,
                 };
+
                 const updatedUserData = {
                     ...currentUserData,
                     userData: {
@@ -166,28 +217,47 @@ const Profile = () => {
                         user: updatedUser,
                     },
                 };
+
                 await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
                 setUserData(updatedUserData.userData.user);
                 setOriginalData(updatedUserData.userData.user);
                 setSelectedImage(null);
-                Alert.alert('Success', 'Profile updated successfully!', [
-                    {
-                        text: 'OK',
-                        onPress: () => {
-                            navigation.goBack();
 
-                        },
-                    },
+                Alert.alert('Success', result.message || 'Profile updated successfully!', [
+                    { text: 'OK', onPress: () => navigation.goBack() },
                 ]);
-            } else {
-                Alert.alert('Error', result.message || 'Failed to update profile.');
+
             }
+            // ✅ Validation errors
+            else if (response.status === 422) {
+                const errors = result?.errors;
+                if (errors) {
+                    // Flatten all errors into a single string
+                    const allErrors = Object.values(errors)
+                        .map(arr => arr.join(', '))
+                        .join('\n');
+                    Alert.alert('Validation Error', allErrors);
+                } else {
+                    Alert.alert('Validation Error', result?.message || 'Validation failed');
+                }
+            }
+            // ✅ Conflict errors (unique email/phone) or other 409/400
+            else if (response.status === 409 || response.status === 400) {
+                Alert.alert('Conflict', result?.message || 'Email or phone already exists.');
+            }
+            // ✅ Other server errors
+            else {
+                Alert.alert('Error', result?.message || 'Failed to update profile.');
+            }
+
         } catch (error) {
-            Alert.alert('Error', 'An unexpected error occurred.');
+            console.error('UPLOAD ERROR:', error);
+            Alert.alert('Error', error.message || 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
     };
+
     const isDarkMode = colorScheme === 'dark';
     const textColor = isDarkMode ? '#fff' : '#000';
     return (
@@ -196,7 +266,7 @@ const Profile = () => {
             <View style={{ minHeight: 250, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary }}>
                 <View style={styles.profilePictureContainer}>
                     <TouchableOpacity onPress={pickImage}>
-                        <Image source={selectedImage ? { uri: selectedImage } : (userData.image ? { uri: userData.image } : IMAGES.user)} style={styles.profileImage} />
+                        <Image source={selectedImage ? { uri: selectedImage.uri } : (userData.image ? { uri: userData.image } : IMAGES.user)} style={styles.profileImage} />
                         <TouchableOpacity
                             style={{
                                 height: 40,
@@ -278,7 +348,7 @@ const Profile = () => {
                             />
                         </View>
 
-                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading || !hasChanges()}>
+                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
                             {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveButtonText}>{t('Update')}</Text>}
                         </TouchableOpacity>
 
