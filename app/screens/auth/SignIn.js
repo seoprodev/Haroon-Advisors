@@ -263,7 +263,9 @@ const SignIn = ({ navigation }) => {
           return false;
         }
       } else {
+
         showToast('Critical Error');
+        return false;
       }
 
       if (userData.message === 'Device recognized') {
@@ -468,6 +470,7 @@ const SignIn = ({ navigation }) => {
   const showToast = (message) => {
     Toast.show(message, Toast.SHORT);
   };
+
   const languageWithFlags = [
     { title: "English", code: "en", image: IMAGES.UnitedStates },
     { title: "Arabic", code: "ar", image: IMAGES.UnitedArabEmirates },
@@ -526,6 +529,7 @@ const SignIn = ({ navigation }) => {
                         );
                       }}
                     />
+
                     <ThemedButton title={t('LetsBegin')} type='primary' onPress={() => setCurrentView('SignIn')} style={{ opacity: beginDisabled ? 0.5 : 1 }} disabled={beginDisabled} />
                   </View>
                 )}

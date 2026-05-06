@@ -288,6 +288,7 @@ const CreateAccount = () => {
                             },
                         ]}
                     />
+
                 </View>
                 <View>
                     <TextInput textAlign={i18next.language === 'ar' ? 'right' : 'left'} secureTextEntry={true} style={[styles.inputStyle, { borderColor: colorScheme === 'dark' ? COLORS.white : COLORS.title, color: colorScheme === 'dark' ? COLORS.white : colors.title }]} onChangeText={handlePasswordChange} placeholder={t('EnterPassword')} placeholderTextColor={colorScheme === 'dark' ? COLORS.white : COLORS.black} />

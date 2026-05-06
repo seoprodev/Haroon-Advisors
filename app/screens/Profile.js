@@ -167,6 +167,12 @@ const Profile = () => {
             if (selectedImage) {
                 // selectedImage should be { uri, name, type }
                 formData.append('image', selectedImage);
+
+                /*formData.append('image', {
+                    uri: selectedImage.uri,
+                    name: selectedImage.name || 'photo.jpg',
+                    type: selectedImage.type || 'image/jpeg',
+                }); */
             }
 
             const updateURL =
@@ -332,7 +338,7 @@ const Profile = () => {
 
                         <Text style={[styles.label, { color: textColor, textAlign: i18next.language === 'ar' ? 'right' : 'left' }]}>{t('Phone')}</Text>
                         <View style={[styles.input, { flexDirection: 'row', alignItems: 'center', borderColor: textColor, borderWidth: 1, borderRadius: 5 }]}>
-                            <Text style={{ paddingRight: 5, color: textColor, textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>+971</Text>
+                            {/* <Text style={{ paddingRight: 5, color: textColor, textAlign: i18next.language === 'ar' ? 'right' : 'left' }}>+971</Text> */}
                             <TextInput
                                 style={{ flex: 1, color: textColor }}
                                 keyboardType="phone-pad"
