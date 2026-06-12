@@ -3,6 +3,7 @@
     "name": "Haroon Advisors",
     "slug": "haroon-portal-fzco",
     "owner": "webdesignmarvel",
+    "EAS_SKIP_AUTO_FINGERPRINT":1,
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
